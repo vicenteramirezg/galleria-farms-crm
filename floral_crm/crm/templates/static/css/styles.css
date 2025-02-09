@@ -1,5 +1,11 @@
+/* Ensure the header background color is applied specifically */
+header {
+    background-color: #211f20 !important;
+}
+
+/* Ensure the nav links and header elements are styled correctly */
 nav {
-    background-color: #211f20;
+    background-color: #211f20 !important;
     color: white;
 }
 
@@ -12,6 +18,6 @@ nav a:hover {
     text-decoration: underline;
 }
 
-header {
-    background-color: #211f20;
+.bg-primary {
+    background-color: #211f20 !important;
 }
