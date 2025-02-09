@@ -47,7 +47,7 @@ class ContactUpdateView(LoginRequiredMixin, UpdateView):
         return Contact.objects.filter(customer__salesperson=self.request.user.salesperson)
     
 @login_required
-def export_contacts_csv(request):
+def export_contacts(request):
     # Get the salesperson's contacts
     contacts = Contact.objects.filter(customer__salesperson=request.user.salesperson)
 
