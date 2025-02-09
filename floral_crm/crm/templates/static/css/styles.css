@@ -1,0 +1,17 @@
+nav {
+    background-color: #211f20;
+    color: white;
+}
+
+nav a {
+    color: white;
+    text-decoration: none;
+}
+
+nav a:hover {
+    text-decoration: underline;
+}
+
+header {
+    background-color: #211f20;
+}

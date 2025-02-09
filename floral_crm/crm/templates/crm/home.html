@@ -1,78 +1,80 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home - Floral CRM</title>
-    <!-- Add Bootstrap for styling (optional) -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            padding: 20px;
-            text-align: center;
-        }
-        .welcome-message {
-            margin-top: 50px;
-            font-size: 2.5rem;
-            font-weight: bold;
-        }
-        .login-buttons {
-            margin-top: 30px;
-        }
-        .login-buttons a {
-            margin: 10px;
-            padding: 10px 20px;
-            font-size: 1.2rem;
-        }
-        .features-section {
-            margin-top: 50px;
-            text-align: left;
-        }
-        .features-section h2 {
-            margin-bottom: 20px;
-        }
-        .features-section ul {
-            list-style-type: none;
-            padding: 0;
-        }
-        .features-section ul li {
-            margin-bottom: 10px;
-            font-size: 1.1rem;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <!-- Welcome Message -->
-        <div class="welcome-message">
-            Welcome to Floral CRM!
-        </div>
+{% extends "crm/base.html" %}
 
-        <!-- Login Buttons -->
-        <div class="login-buttons">
-            {% if user.is_authenticated %}
-                <a href="{% url 'crm:dashboard' %}" class="btn btn-primary">Go to Dashboard</a>
-                <a href="{% url 'account_logout' %}" class="btn btn-danger">Logout</a>
-            {% else %}
-                <a href="{% url 'account_login' %}" class="btn btn-primary">Login</a>
-                <a href="{% url 'account_signup' %}" class="btn btn-success">Sign Up</a>
-            {% endif %}
-        </div>
+{% block title %}Home - Floral CRM{% endblock %}
 
-        <!-- Features Section -->
-        <div class="features-section">
-            <h2>Features</h2>
-            <ul>
-                <li>📊 Track customer data and sales.</li>
-                <li>📞 Manage points of contact for each customer.</li>
-                <li>📤 Export contact data as CSV.</li>
-                <li>🔒 Secure access with role-based permissions.</li>
-                <li>🌐 Login with Microsoft or Google.</li>
-            </ul>
+{% block content %}
+<!-- Welcome Message -->
+<div class="jumbotron text-center bg-light py-5">
+    <h1 class="display-4 font-weight-bold">Welcome to Floral CRM!</h1>
+    <p class="lead">Your one-stop solution to manage customers, sales, and contacts with ease.</p>
+</div>
+
+<!-- Login Buttons -->
+<div class="text-center mb-5">
+    {% if user.is_authenticated %}
+        <a href="{% url 'crm:dashboard' %}" class="btn btn-primary btn-lg mx-2">Go to Dashboard</a>
+        <a href="{% url 'logout' %}" class="btn btn-danger btn-lg mx-2">Logout</a>
+    {% else %}
+        <a href="{% url 'login' %}" class="btn btn-primary btn-lg mx-2">Login</a>
+        <a href="{% url 'signup' %}" class="btn btn-success btn-lg mx-2">Sign Up</a>
+    {% endif %}
+</div>
+
+<!-- Features Section -->
+<section class="container text-center">
+    <h2 class="mb-4">Key Features</h2>
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm border-light">
+                <div class="card-body">
+                    <h5 class="card-title">📊 Track Customer Data</h5>
+                    <p class="card-text">Easily manage and analyze customer data and sales performance.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm border-light">
+                <div class="card-body">
+                    <h5 class="card-title">📞 Manage Contacts</h5>
+                    <p class="card-text">Track multiple points of contact for each customer.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm border-light">
+                <div class="card-body">
+                    <h5 class="card-title">📤 Export Data</h5>
+                    <p class="card-text">Export customer and contact data seamlessly to CSV.</p>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Optional: Add Bootstrap JS for interactive components -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm border-light">
+                <div class="card-body">
+                    <h5 class="card-title">🔒 Secure Access</h5>
+                    <p class="card-text">Role-based permissions for secure and customizable access.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm border-light">
+                <div class="card-body">
+                    <h5 class="card-title">🌐 Easy Login</h5>
+                    <p class="card-text">Login with Microsoft or Google for seamless authentication.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}
+
+{% block scripts %}
+<!-- Optional: Add custom JavaScript if needed -->
+<script>
+    // Example: Adding some dynamic content or effects here
+</script>
+{% endblock %}

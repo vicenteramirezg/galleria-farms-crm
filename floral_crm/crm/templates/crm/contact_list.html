@@ -1,0 +1,60 @@
+{% extends "crm/base.html" %}
+
+{% block title %}Contacts - Floral CRM{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h1 class="text-center display-4 font-weight-bold mb-4">Contacts</h1>
+
+    <!-- Add Contact Button -->
+    <div class="text-center mb-4">
+        <a href="{% url 'crm:add_contact' %}" class="btn btn-primary btn-lg">Add Contact</a>
+    </div>
+
+    <!-- Contact List -->
+    {% if contacts %}
+        <div class="row">
+            {% for contact in contacts %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body">
+                            <h3 class="card-title d-flex justify-content-between align-items-center">
+                                <span><strong>{{ contact.name }}</strong></span>
+                                <a href="{% url 'crm:edit_contact' contact.id %}" class="btn btn-sm btn-outline-primary">Edit</a>
+                            </h3>
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <strong>Email:</strong> {{ contact.email }}
+                                </li>
+                                <li class="mb-2">
+                                    <strong>Phone:</strong> {{ contact.phone }}
+                                </li>
+                                <li class="mb-2">
+                                    <strong>Customer:</strong> {{ contact.customer.name }}
+                                </li>
+                                <li class="mb-2">
+                                    <span class="badge bg-info">Score: {{ contact.relationship_score }}</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="text-center">No contacts found.</p>
+    {% endif %}
+
+    <!-- Export Button -->
+    <div class="text-center mt-4">
+        <a href="{% url 'crm:export_contacts' %}" class="btn btn-success btn-lg">Export Contacts as CSV</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Optional: Add any custom JavaScript if needed -->
+<script>
+    // Example of dynamic interactivity (if required)
+</script>
+{% endblock %}
