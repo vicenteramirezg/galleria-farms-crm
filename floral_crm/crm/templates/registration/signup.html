@@ -14,20 +14,65 @@
                     <input type="text" name="username" class="form-control" id="id_username" required>
                 </div>
                 <div class="form-group">
+                    <label for="id_first_name">First Name</label>
+                    <input type="text" name="first_name" class="form-control" id="id_first_name" required>
+                </div>
+                <div class="form-group">
+                    <label for="id_last_name">Last Name</label>
+                    <input type="text" name="last_name" class="form-control" id="id_last_name" required>
+                </div>
+                <div class="form-group">
                     <label for="id_email">Email</label>
                     <input type="email" name="email" class="form-control" id="id_email" required>
                 </div>
                 <div class="form-group">
-                    <label for="id_password">Password</label>
-                    <input type="password" name="password" class="form-control" id="id_password" required>
+                    <label for="id_phone">Phone Number</label>
+                    <input type="tel" name="phone" class="form-control" id="id_phone" required>
                 </div>
                 <div class="form-group">
-                    <label for="id_password_confirm">Confirm Password</label>
-                    <input type="password" name="password_confirm" class="form-control" id="id_password_confirm" required>
+                    <label for="id_password1">Password</label>
+                    <input type="password" name="password1" class="form-control" id="id_password1" required>
+                </div>
+                <div class="form-group">
+                    <label for="id_password2">Confirm Password</label>
+                    <input type="password" name="password2" class="form-control" id="id_password2" required>
                 </div>
                 <button type="submit" class="btn btn-primary btn-block">Sign Up</button>
             </form>
         </div>
     </div>
 </div>
+
+<!-- Load intl-tel-input for phone formatting -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/css/intlTelInput.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/intlTelInput.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var input = document.querySelector("#id_phone");
+        var iti = window.intlTelInput(input, {
+            initialCountry: "us",  // Default country
+            separateDialCode: true,  // Shows country code separately
+            preferredCountries: ["us", "gb", "ca"],  // Preferred countries
+            utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/utils.js" // Formatting script
+        });
+
+        // Auto-format phone number as user types
+        input.addEventListener("input", function() {
+            let phoneNumber = input.value.replace(/\D/g, ''); // Remove non-digit characters
+            if (phoneNumber.length > 6) {
+                phoneNumber = phoneNumber.replace(/(\d{3})(\d{3})(\d{0,4})/, "$1-$2-$3");
+            } else if (phoneNumber.length > 3) {
+                phoneNumber = phoneNumber.replace(/(\d{3})(\d{0,3})/, "$1-$2");
+            }
+            input.value = phoneNumber;
+        });
+
+        // Ensure formatted phone number is submitted
+        document.querySelector("form").addEventListener("submit", function(event) {
+            var fullPhoneNumber = iti.getNumber();  // Get full international number
+            input.value = fullPhoneNumber;  // Set the value before submitting
+        });
+    });
+</script>
+
 {% endblock %}
