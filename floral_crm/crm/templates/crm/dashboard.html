@@ -19,7 +19,7 @@
             <div class="card-body">
                 <h3 class="card-title d-flex justify-content-between">
                     <span><strong>{{ customer.name }}</strong> - ${{ customer.estimated_yearly_sales }}</span>
-                    <a href="{% url 'customer_edit' customer.id %}" class="btn btn-sm btn-outline-primary">Edit Customer</a>
+                    <a href="{% url 'crm:customer_edit' customer.id %}" class="btn btn-sm btn-outline-primary">Edit Customer</a>
                 </h3>
                 <ul class="list-unstyled">
                     {% for contact in customer.contacts.all %}
@@ -29,7 +29,7 @@
                                 <small>{{ contact.email }} | {{ contact.phone }}</small><br>
                                 <span class="badge badge-info">Score: {{ contact.relationship_score }}</span>
                             </div>
-                            <a href="{% url 'contact_edit' contact.id %}" class="btn btn-sm btn-outline-secondary">Edit Contact</a>
+                            <a href="{% url 'crm:contact_edit' contact.id %}" class="btn btn-sm btn-outline-secondary">Edit Contact</a>
                         </li>
                     {% endfor %}
                 </ul>

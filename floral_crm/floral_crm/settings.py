@@ -22,9 +22,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = "django-insecure-w+^qqgm&oi4n&ht&1*v)hd8_xhnd&=j%@zm9me(ah76s1bl%k*"
 
-LOGIN_URL = 'login'  # Or the correct name of your login view
-
-LOGIN_REDIRECT_URL = 'crm:dashboard'  # or wherever you want the user to go after login
+LOGIN_URL = '/login/'  # Redirect users who are not logged in
+LOGIN_REDIRECT_URL = '/crm/dashboard/'  # Redirect users here after logging in
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True

@@ -1,9 +1,22 @@
 from django.db import models
 from django.contrib.auth.models import User
 
+class Role(models.TextChoices):
+    SALESPERSON = 'Salesperson', 'Salesperson'
+    EXECUTIVE = 'Executive', 'Executive'
+
+class Profile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    role = models.CharField(max_length=20, choices=Role.choices, default=Role.SALESPERSON)
+
+    def is_executive(self):
+        return self.role == Role.EXECUTIVE
+
+    def __str__(self):
+        return f"{self.user.get_full_name()} - {self.role}"
+
 class Salesperson(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    # Additional fields for salesperson (if needed)
     phone = models.CharField(max_length=15, blank=True)
 
     def __str__(self):

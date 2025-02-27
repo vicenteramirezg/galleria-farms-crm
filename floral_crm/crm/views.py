@@ -2,17 +2,20 @@ from django.core.exceptions import PermissionDenied
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 import csv
+from django.views.decorators.csrf import csrf_exempt
 from django.urls import reverse
 from django.http import HttpResponse
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.views import View
 from django.views.generic import ListView, UpdateView, CreateView
 from django.urls import reverse_lazy
-from .models import Customer, Contact, Salesperson
-from django.contrib.auth import login
+from .models import Customer, Contact, Salesperson, Profile, Role
+from django.contrib.auth import login, logout
 from .forms import SignupForm
-from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
 from .forms import CustomerForm, ContactForm  # Ensure you have this form
+from django.http import HttpResponseNotAllowed
+from django.utils.decorators import method_decorator
 
 def home(request):
     return render(request, 'home.html')
@@ -21,29 +24,48 @@ def signup(request):
     if request.method == 'POST':
         form = SignupForm(request.POST)
         if form.is_valid():
-            user = form.save()
-            login(request, user)
-            return redirect('home')  # Redirect to a desired page after signup
+            user = form.save()  # Automatically hashes the password
+            Profile.objects.create(user=user, role=Role.SALESPERSON)  # Assign Salesperson role
+            Salesperson.objects.create(user=user, phone="")  # Create Salesperson with no customers
+            login(request, user)  # Log in the new user
+            return redirect('home')  # Redirect to home
     else:
         form = SignupForm()
+    
     return render(request, 'registration/signup.html', {'form': form})
+
+class CustomLogoutView(View):
+    @method_decorator(csrf_exempt)  # Disable CSRF for GET requests only (Django handles CSRF in forms)
+    def post(self, request):
+        logout(request)
+        return redirect('/')
+
+    def get(self, request):
+        # Prevent direct GET requests to the logout URL
+        return HttpResponseNotAllowed(["POST"])
 
 class SalespersonAccessMixin:
     def dispatch(self, request, *args, **kwargs):
-        if not request.user.salesperson.customers.filter(id=kwargs.get('customer_id')).exists():
+        if not request.user.salesperson.customers.filter(id=kwargs.get('pk')).exists():
             raise PermissionDenied("You do not have access to this customer.")
         return super().dispatch(request, *args, **kwargs)
 
+@login_required
 def dashboard(request):
-    try:
-        salesperson = request.user.salesperson
-        customers = salesperson.customers.all()
-    except Salesperson.DoesNotExist:
-        customers = Customer.objects.all()
+    user_profile = request.user.profile
+
+    if user_profile.is_executive():
+        customers = Customer.objects.all()  # Executives see all customers
+    else:
+        try:
+            salesperson = request.user.salesperson
+            customers = salesperson.customers.all()
+        except AttributeError:
+            customers = Customer.objects.none()
 
     return render(request, 'crm/dashboard.html', {'customers': customers})
 
-class CustomerUpdateView(LoginRequiredMixin, UpdateView):
+class CustomerUpdateView(LoginRequiredMixin, SalespersonAccessMixin, UpdateView):
     model = Customer
     fields = ['name', 'estimated_yearly_sales']
     template_name = 'crm/customer_form.html'
@@ -61,6 +83,7 @@ class ContactUpdateView(LoginRequiredMixin, UpdateView):
     def get_queryset(self):
         return Contact.objects.filter(customer__salesperson=self.request.user.salesperson)
 
+@login_required
 def export_contacts(request):
     contacts = Contact.objects.filter(customer__salesperson=request.user.salesperson)
 
@@ -87,6 +110,7 @@ class CustomerCreateView(LoginRequiredMixin, CreateView):
         customer.save()
         return super().form_valid(form)
 
+@login_required
 def add_customer(request):
     if request.method == "POST":
         form = CustomerForm(request.POST)
@@ -100,8 +124,9 @@ def add_customer(request):
     
     return render(request, 'crm/add_customer.html', {'form': form})
 
+@login_required
 def customer_list(request):
-    customers = Customer.objects.all()
+    customers = Customer.objects.filter(salesperson=request.user.salesperson)
     return render(request, 'crm/customer_list.html', {'customers': customers})
 
 class ContactListView(LoginRequiredMixin, ListView):
@@ -113,12 +138,13 @@ class ContactListView(LoginRequiredMixin, ListView):
         # Filter contacts by the logged-in salesperson
         return Contact.objects.filter(customer__salesperson=self.request.user.salesperson)
 
+@login_required
 def add_contact(request):
     if request.method == "POST":
         form = ContactForm(request.POST)
         if form.is_valid():
             contact = form.save(commit=False)
-            contact.salesperson = request.user.salesperson  # Assign salesperson if needed
+            contact.customer.salesperson = request.user.salesperson  # Assign salesperson
             contact.save()
             return redirect(reverse('crm:contact_list'))
     else:

@@ -20,7 +20,7 @@
                         <div class="card-body">
                             <h3 class="card-title d-flex justify-content-between align-items-center">
                                 <span><strong>{{ customer.name }}</strong></span>
-                                <a href="{% url 'crm:edit_customer' customer.id %}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                <a href="{% url 'crm:customer_edit' customer.id %}" class="btn btn-sm btn-outline-primary">Edit</a>
                             </h3>
                             <ul class="list-unstyled">
                                 {% for contact in customer.contacts.all %}
