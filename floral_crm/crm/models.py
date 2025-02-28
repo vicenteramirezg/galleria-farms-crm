@@ -24,7 +24,7 @@ class Salesperson(models.Model):
 
 class Customer(models.Model):
     name = models.CharField(max_length=255)
-    estimated_yearly_sales = models.DecimalField(max_digits=10, decimal_places=2)
+    estimated_yearly_sales = models.IntegerField()
     salesperson = models.ForeignKey(Salesperson, on_delete=models.CASCADE, related_name='customers')
 
     def __str__(self):

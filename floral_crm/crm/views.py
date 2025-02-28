@@ -1,5 +1,5 @@
 from django.core.exceptions import PermissionDenied
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 import csv
 from django.views.decorators.csrf import csrf_exempt
@@ -70,12 +70,35 @@ def dashboard(request):
 
 class CustomerUpdateView(LoginRequiredMixin, SalespersonAccessMixin, UpdateView):
     model = Customer
-    fields = ['name', 'estimated_yearly_sales']
+    form_class = CustomerForm
     template_name = 'crm/customer_form.html'
-    success_url = reverse_lazy('crm:dashboard')
+    success_url = reverse_lazy('crm:customer_list')
 
     def get_queryset(self):
-        return self.request.user.salesperson.customers.all()
+        """ Ensure the salesperson can only edit their own customers """
+        queryset = Customer.objects.filter(salesperson=self.request.user.salesperson)
+        logger.info(f"CustomerEditView - Filtering customers for salesperson {self.request.user.salesperson}: {queryset}")
+        return queryset
+
+    def form_valid(self, form):
+        """ Ensure salesperson remains unchanged and log the exact form data received """
+        form.instance.salesperson = self.request.user.salesperson  # Keep salesperson unchanged
+
+        # 🛑 Log the form's raw input data
+        logger.info(f"🔹 Form Data Before Saving: {form.cleaned_data}")
+
+        response = super().form_valid(form)
+
+        # 🔥 Fetch updated customer directly from the database to verify
+        updated_customer = get_object_or_404(Customer, id=form.instance.id)
+        logger.info(f"✅ Database After Update: {updated_customer.name}, Sales: {updated_customer.estimated_yearly_sales}")
+
+        return response
+
+    def form_invalid(self, form):
+        """ Log invalid form submissions """
+        logger.error(f"CustomerEditView - FORM INVALID: {form.errors}")
+        return super().form_invalid(form)
 
 class ContactUpdateView(LoginRequiredMixin, UpdateView):
     model = Contact

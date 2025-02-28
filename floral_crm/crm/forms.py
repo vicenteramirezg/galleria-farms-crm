@@ -3,10 +3,29 @@ from .models import Customer, Contact
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 class CustomerForm(forms.ModelForm):
     class Meta:
         model = Customer
         fields = ['name', 'estimated_yearly_sales']
+
+    def clean_estimated_yearly_sales(self):
+        sales = self.cleaned_data.get('estimated_yearly_sales')
+        
+        logger.info(f"🧐 Raw input before cleaning: {sales} (Type: {type(sales)})")
+
+        if isinstance(sales, str):  # Remove commas only if it's a string
+            try:
+                sales = int(sales.replace(",", ""))  # Convert to integer
+            except ValueError:
+                raise forms.ValidationError("Enter a valid number.")
+
+        logger.info(f"✅ Cleaned value: {sales} (Type: {type(sales)})")
+
+        return sales
 
 class ContactForm(forms.ModelForm):
     class Meta:

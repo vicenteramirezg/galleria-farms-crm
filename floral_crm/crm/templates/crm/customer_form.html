@@ -36,9 +36,10 @@
 
             <!-- Estimated Yearly Sales Field (Formatted with JS) -->
             <div class="mb-3">
-                <label for="id_estimated_yearly_sales" class="form-label font-weight-bold">Estimated Yearly Sales:</label>
-                <input type="text" id="id_estimated_yearly_sales" name="estimated_yearly_sales" class="form-control" 
-                       value="{{ form.estimated_yearly_sales.value|floatformat:0|intcomma }}" required>
+                <label for="id_estimated_yearly_sales_display" class="form-label font-weight-bold">Estimated Yearly Sales:</label>
+                <input type="text" id="id_estimated_yearly_sales_display" class="form-control" required>
+                <input type="hidden" id="id_estimated_yearly_sales" name="estimated_yearly_sales"
+                       value="{{ form.estimated_yearly_sales.value }}">
             </div>
 
             <!-- Form Actions -->
@@ -55,28 +56,30 @@
 {% block scripts %}
 <script>
     document.addEventListener("DOMContentLoaded", function() {
-        var salesInput = document.getElementById("id_estimated_yearly_sales");
+        var displayInput = document.getElementById("id_estimated_yearly_sales_display");
+        var hiddenInput = document.getElementById("id_estimated_yearly_sales");
 
-        // Function to format the input while typing
-        function formatNumberInput(value) {
-            return value.replace(/\D/g, "")  // Remove non-digit characters
+        // Function to format number with commas
+        function formatNumber(value) {
+            return value.replace(/\D/g, "")  // Remove non-numeric characters
                         .replace(/\B(?=(\d{3})+(?!\d))/g, ","); // Add commas
         }
 
-        // Format existing value on page load
-        salesInput.value = formatNumberInput(salesInput.value);
+        // Ensure the display input shows the formatted number on load
+        if (hiddenInput.value) {
+            displayInput.value = formatNumber(hiddenInput.value);
+        }
 
-        // Listen for input event
-        salesInput.addEventListener("input", function() {
-            var cursorPosition = salesInput.selectionStart;
-            var cleanedValue = salesInput.value.replace(/,/g, ""); // Remove existing commas
-            salesInput.value = formatNumberInput(cleanedValue);
-            salesInput.setSelectionRange(cursorPosition, cursorPosition); // Maintain cursor position
+        // Update the hidden input whenever the user types in the formatted display input
+        displayInput.addEventListener("input", function() {
+            var rawValue = displayInput.value.replace(/,/g, ""); // Remove commas
+            displayInput.value = formatNumber(rawValue);
+            hiddenInput.value = rawValue; // Keep hidden input in clean numeric format
         });
 
-        // Remove commas before submitting the form
+        // Before submitting, make sure hidden input has the correct numeric value
         document.querySelector("form").addEventListener("submit", function() {
-            salesInput.value = salesInput.value.replace(/,/g, "");
+            hiddenInput.value = displayInput.value.replace(/,/g, ""); // Ensure raw number before submission
         });
     });
 </script>
