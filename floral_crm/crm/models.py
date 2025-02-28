@@ -16,11 +16,11 @@ class Profile(models.Model):
         return f"{self.user.get_full_name()} - {self.role}"
 
 class Salesperson(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    phone = models.CharField(max_length=20, blank=True)  # Store phone as plain text
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='salesperson')
+    phone = models.CharField(max_length=20, blank=True)  # Store phone as a string
 
     def __str__(self):
-        return self.user.get_full_name()
+        return f"{self.user.get_full_name()} - {self.phone}"
 
 class Customer(models.Model):
     name = models.CharField(max_length=255)

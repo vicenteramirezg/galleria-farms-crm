@@ -8,7 +8,7 @@
         <div class="col-md-6">
             <h2 class="text-center mb-4">Sign Up</h2>
 
-            <!-- Show any error messages -->
+            <!-- Show error messages -->
             {% if form.errors %}
                 <div class="alert alert-danger">
                     <ul>
@@ -26,26 +26,30 @@
 
             <form method="POST">
                 {% csrf_token %}
+                
                 <div class="form-group">
                     <label for="id_username">Username</label>
-                    <input type="text" name="username" class="form-control" id="id_username" required>
+                    <input type="text" name="username" class="form-control" id="id_username" value="{{ form.username.value|default_if_none:'' }}" required>
                 </div>
                 <div class="form-group">
                     <label for="id_first_name">First Name</label>
-                    <input type="text" name="first_name" class="form-control" id="id_first_name" required>
+                    <input type="text" name="first_name" class="form-control" id="id_first_name" value="{{ form.first_name.value|default_if_none:'' }}" required>
                 </div>
                 <div class="form-group">
                     <label for="id_last_name">Last Name</label>
-                    <input type="text" name="last_name" class="form-control" id="id_last_name" required>
+                    <input type="text" name="last_name" class="form-control" id="id_last_name" value="{{ form.last_name.value|default_if_none:'' }}" required>
                 </div>
                 <div class="form-group">
                     <label for="id_email">Email</label>
-                    <input type="email" name="email" class="form-control" id="id_email" required>
+                    <input type="email" name="email" class="form-control" id="id_email" value="{{ form.email.value|default_if_none:'' }}" required>
                 </div>
+                
+                <!-- Phone input field with intl-tel-input -->
                 <div class="form-group">
                     <label for="id_phone">Phone Number</label>
-                    <input type="tel" name="phone" class="form-control" id="id_phone" required>
+                    <input type="tel" name="phone" class="form-control" id="id_phone" value="{{ form.phone.value|default_if_none:'' }}" required>
                 </div>
+
                 <div class="form-group">
                     <label for="id_password1">Password</label>
                     <input type="password" name="password1" class="form-control" id="id_password1" required>
@@ -54,15 +58,17 @@
                     <label for="id_password2">Confirm Password</label>
                     <input type="password" name="password2" class="form-control" id="id_password2" required>
                 </div>
+
                 <button type="submit" class="btn btn-primary btn-block">Sign Up</button>
             </form>
         </div>
     </div>
 </div>
 
-<!-- Load intl-tel-input for phone formatting -->
+<!-- Load intl-tel-input for country codes -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/css/intlTelInput.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/intlTelInput.min.js"></script>
+
 <script>
     document.addEventListener("DOMContentLoaded", function() {
         var input = document.querySelector("#id_phone");
@@ -73,15 +79,26 @@
             utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/utils.js"
         });
 
-        // Ensure only the correctly formatted phone number is submitted
+        // Format phone input dynamically as XXX-XXX-XXXX
+        input.addEventListener("input", function(event) {
+            let phoneNumber = input.value.replace(/\D/g, ''); // Remove non-numeric characters
+            if (phoneNumber.length > 6) {
+                phoneNumber = phoneNumber.replace(/(\d{3})(\d{3})(\d{0,4})/, "$1-$2-$3");
+            } else if (phoneNumber.length > 3) {
+                phoneNumber = phoneNumber.replace(/(\d{3})(\d{0,3})/, "$1-$2");
+            }
+            input.value = phoneNumber;
+        });
+
+        // Ensure phone number is stored in full international format before submitting
         document.querySelector("form").addEventListener("submit", function(event) {
-            var fullPhoneNumber = iti.getNumber();
+            var fullPhoneNumber = iti.getNumber();  // Get full number with country code (e.g. +17868755569)
             if (!fullPhoneNumber) {
-                event.preventDefault();
+                event.preventDefault();  // Stop form submission
                 alert("Please enter a valid phone number.");
                 return;
             }
-            input.value = fullPhoneNumber;
+            input.value = fullPhoneNumber.replace(/\D/g, '');  // Store number without formatting
         });
     });
 </script>
