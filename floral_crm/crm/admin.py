@@ -1,7 +1,13 @@
 from django.contrib import admin
-from .models import Salesperson, Customer, Contact
+from .models import Salesperson, Customer, Contact, Profile
 
 # Register your models here
+@admin.register(Profile)
+class ProfileAdmin(admin.ModelAdmin):
+    list_display = ('user', 'role')  # Display user and role in admin
+    list_filter = ('role',)
+    search_fields = ('user__username', 'role')
+
 @admin.register(Salesperson)
 class SalespersonAdmin(admin.ModelAdmin):
     list_display = ('user', 'phone')  # Fields to display in the admin list view

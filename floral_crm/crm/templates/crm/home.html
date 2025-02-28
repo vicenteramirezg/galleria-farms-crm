@@ -5,19 +5,8 @@
 {% block content %}
 <!-- Welcome Message -->
 <div class="jumbotron text-center bg-light py-5">
-    <h1 class="display-4 font-weight-bold">Welcome to Floral CRM!</h1>
+    <h1 class="display-4 font-weight-bold">Welcome to Galleria Farms CRM!</h1>
     <p class="lead">Your one-stop solution to manage customers, sales, and contacts with ease.</p>
-</div>
-
-<!-- Login Buttons -->
-<div class="text-center mb-5">
-    {% if user.is_authenticated %}
-        <a href="{% url 'crm:dashboard' %}" class="btn btn-primary btn-lg mx-2">Go to Dashboard</a>
-        <a href="{% url 'logout' %}" class="btn btn-danger btn-lg mx-2">Logout</a>
-    {% else %}
-        <a href="{% url 'login' %}" class="btn btn-primary btn-lg mx-2">Login</a>
-        <a href="{% url 'signup' %}" class="btn btn-success btn-lg mx-2">Sign Up</a>
-    {% endif %}
 </div>
 
 <!-- Features Section -->
