@@ -1,5 +1,5 @@
 from django.core.exceptions import PermissionDenied
-from django.shortcuts import render, get_object_or_404, redirect
+from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 import csv
 from django.views.decorators.csrf import csrf_exempt
@@ -11,9 +11,7 @@ from django.views.generic import ListView, UpdateView, CreateView
 from django.urls import reverse_lazy
 from .models import Customer, Contact, Salesperson, Profile, Role
 from django.contrib.auth import login, logout
-from .forms import SignupForm
-from django.contrib.auth.forms import UserCreationForm
-from .forms import CustomerForm, ContactForm  # Ensure you have this form
+from .forms import CustomerForm, ContactForm, SignupForm  # Ensure you have this form
 from django.http import HttpResponseNotAllowed
 from django.utils.decorators import method_decorator
 
@@ -24,14 +22,15 @@ def signup(request):
     if request.method == 'POST':
         form = SignupForm(request.POST)
         if form.is_valid():
-            user = form.save()  # Automatically hashes the password
-            Profile.objects.create(user=user, role=Role.SALESPERSON)  # Assign Salesperson role
-            Salesperson.objects.create(user=user, phone="")  # Create Salesperson with no customers
-            login(request, user)  # Log in the new user
-            return redirect('home')  # Redirect to home
+            user = form.save()
+            login(request, user)
+            return redirect('home')
+        else:
+            print(form.errors)  # Debugging: Print errors to console
+
     else:
         form = SignupForm()
-    
+
     return render(request, 'registration/signup.html', {'form': form})
 
 class CustomLogoutView(View):

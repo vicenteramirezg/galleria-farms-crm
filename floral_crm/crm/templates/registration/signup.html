@@ -7,6 +7,23 @@
     <div class="row justify-content-center">
         <div class="col-md-6">
             <h2 class="text-center mb-4">Sign Up</h2>
+
+            <!-- Show any error messages -->
+            {% if form.errors %}
+                <div class="alert alert-danger">
+                    <ul>
+                        {% for field in form %}
+                            {% for error in field.errors %}
+                                <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                            {% endfor %}
+                        {% endfor %}
+                        {% for error in form.non_field_errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+
             <form method="POST">
                 {% csrf_token %}
                 <div class="form-group">
@@ -50,27 +67,21 @@
     document.addEventListener("DOMContentLoaded", function() {
         var input = document.querySelector("#id_phone");
         var iti = window.intlTelInput(input, {
-            initialCountry: "us",  // Default country
-            separateDialCode: true,  // Shows country code separately
-            preferredCountries: ["us", "gb", "ca"],  // Preferred countries
-            utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/utils.js" // Formatting script
+            initialCountry: "us",
+            separateDialCode: true,
+            preferredCountries: ["us", "co", "ca"],
+            utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/utils.js"
         });
 
-        // Auto-format phone number as user types
-        input.addEventListener("input", function() {
-            let phoneNumber = input.value.replace(/\D/g, ''); // Remove non-digit characters
-            if (phoneNumber.length > 6) {
-                phoneNumber = phoneNumber.replace(/(\d{3})(\d{3})(\d{0,4})/, "$1-$2-$3");
-            } else if (phoneNumber.length > 3) {
-                phoneNumber = phoneNumber.replace(/(\d{3})(\d{0,3})/, "$1-$2");
-            }
-            input.value = phoneNumber;
-        });
-
-        // Ensure formatted phone number is submitted
+        // Ensure only the correctly formatted phone number is submitted
         document.querySelector("form").addEventListener("submit", function(event) {
-            var fullPhoneNumber = iti.getNumber();  // Get full international number
-            input.value = fullPhoneNumber;  // Set the value before submitting
+            var fullPhoneNumber = iti.getNumber();
+            if (!fullPhoneNumber) {
+                event.preventDefault();
+                alert("Please enter a valid phone number.");
+                return;
+            }
+            input.value = fullPhoneNumber;
         });
     });
 </script>

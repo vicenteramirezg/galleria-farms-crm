@@ -10,10 +10,10 @@ User = get_user_model()
 def create_profile_and_salesperson(sender, instance, created, **kwargs):
     if created:
         # Create Profile with Salesperson role
-        profile = Profile.objects.create(user=instance, role=Role.SALESPERSON)
-        # Create Salesperson with user's first and last name
-        Salesperson.objects.create(user=instance, phone="")
+        Profile.objects.create(user=instance, role=Role.SALESPERSON)
 
-@receiver(post_save, sender=User)
-def save_profile(sender, instance, **kwargs):
-    instance.profile.save()
+        # Create Salesperson using user details
+        Salesperson.objects.create(
+            user=instance,
+            phone=""  # User's phone is handled by the form; keep it blank for now
+        )
