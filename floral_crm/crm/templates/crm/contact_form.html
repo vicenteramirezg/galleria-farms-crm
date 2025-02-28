@@ -12,24 +12,31 @@
             <!-- Name Field -->
             <div class="mb-3">
                 <label for="id_name" class="form-label font-weight-bold">Name:</label>
-                <input type="text" id="id_name" name="name" class="form-control" value="{{ form.name.value }}" required>
+                {{ form.name }}
             </div>
 
-            <!-- Phone Field -->
+            <!-- Phone Field (Visible) -->
             <div class="mb-3">
                 <label for="id_phone" class="form-label font-weight-bold">Phone:</label>
-                <input type="tel" id="id_phone" name="phone_display" class="form-control" value="{{ form.phone.value }}">
-                <!-- Hidden input to store the full international number -->
-                <input type="hidden" id="id_phone_full" name="phone">
+                <input type="tel" id="id_phone" class="form-control">
+                <!-- Hidden Input to Store Full International Format -->
+                <input type="hidden" id="id_phone_full" name="phone" value="{{ form.phone.value }}">
             </div>
 
             <!-- Email Field -->
             <div class="mb-3">
                 <label for="id_email" class="form-label font-weight-bold">Email:</label>
-                <input type="email" id="id_email" name="email" class="form-control" value="{{ form.email.value }}">
+                {{ form.email }}
             </div>
 
-            <!-- Relationship Score Field -->
+            <!-- Birthday Field -->
+            <div class="mb-3">
+                <label for="id_birthday" class="form-label font-weight-bold">Birthday:</label>
+                <input type="date" id="id_birthday" name="birthday" class="form-control"
+                    value="{{ form.birthday.value|date:'Y-m-d' }}">
+            </div>
+
+            <!-- Relationship Score Field (Star Rating) -->
             <div class="mb-3">
                 <label class="form-label font-weight-bold d-block">Relationship Score:</label>
                 <div class="star-rating">
@@ -63,7 +70,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/css/intlTelInput.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/intlTelInput.min.js"></script>
 
-<!-- Custom CSS for star rating -->
+<!-- Custom CSS for Star Rating -->
 <style>
     .star-rating {
         direction: rtl;
@@ -88,11 +95,12 @@
     }
 </style>
 
+<!-- JavaScript to Handle Phone Formatting & Ensure Proper Submission -->
 <script>
     document.addEventListener("DOMContentLoaded", function() {
-        // Initialize intl-tel-input for phone field
         var phoneInput = document.querySelector("#id_phone");
         var hiddenInput = document.querySelector("#id_phone_full");
+
         var iti = window.intlTelInput(phoneInput, {
             initialCountry: "us",
             separateDialCode: true,
@@ -100,10 +108,13 @@
             utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/utils.js"
         });
 
-        // Set the initial value of the hidden input to the current phone number
-        hiddenInput.value = "{{ form.phone.value }}";
+        // Pre-fill visible phone input with formatted number
+        let storedPhone = hiddenInput.value;
+        if (storedPhone) {
+            iti.setNumber(storedPhone); // Set the number in intl-tel-input
+        }
 
-        // Format phone number as user types (frontend only)
+        // Real-time phone number formatting as user types
         phoneInput.addEventListener("input", function() {
             let phoneNumber = phoneInput.value.replace(/\D/g, '');
             if (phoneNumber.length > 6) {
@@ -114,17 +125,24 @@
             phoneInput.value = phoneNumber;
         });
 
-        // Before form submission, store full international number without formatting
+        // Ensure hidden input is updated on any change
+        phoneInput.addEventListener("blur", function() {
+            hiddenInput.value = iti.getNumber(); // Update hidden field
+            console.log("Hidden phone field updated:", hiddenInput.value); // Debugging
+        });
+
+        // Ensure only the correctly formatted phone number is submitted
         document.querySelector("form").addEventListener("submit", function(event) {
             var fullPhoneNumber = iti.getNumber(); // Get full international number
+
             if (!fullPhoneNumber) {
-                event.preventDefault(); // Prevent form submission if phone number is invalid
+                event.preventDefault();
                 alert("Please enter a valid phone number.");
                 return;
             }
-            // Update the hidden input value to the full international number
-            hiddenInput.value = fullPhoneNumber;
-            console.log("Hidden input value:", hiddenInput.value); // Debugging: Log the value
+
+            hiddenInput.value = fullPhoneNumber; // Store full number in hidden input
+            console.log("Submitting phone:", hiddenInput.value); // Debugging: Log the value
         });
     });
 </script>

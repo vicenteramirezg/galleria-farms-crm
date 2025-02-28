@@ -14,6 +14,10 @@ from django.contrib.auth import login, logout
 from .forms import CustomerForm, ContactForm, SignupForm  # Ensure you have this form
 from django.http import HttpResponseNotAllowed
 from django.utils.decorators import method_decorator
+from django.contrib import messages
+import logging
+
+logger = logging.getLogger(__name__)  # Setup logging for debugging
 
 def home(request):
     return render(request, 'home.html')
@@ -75,12 +79,36 @@ class CustomerUpdateView(LoginRequiredMixin, SalespersonAccessMixin, UpdateView)
 
 class ContactUpdateView(LoginRequiredMixin, UpdateView):
     model = Contact
-    fields = ['name', 'phone', 'email', 'relationship_score']
+    form_class = ContactForm  
     template_name = 'crm/contact_form.html'
-    success_url = reverse_lazy('crm:dashboard')
+    success_url = reverse_lazy('crm:contact_list')
 
     def get_queryset(self):
+        """ Ensure the user can only edit their own contacts """
         return Contact.objects.filter(customer__salesperson=self.request.user.salesperson)
+
+    def form_valid(self, form):
+        """ Ensure the customer is always set automatically """
+        contact = form.save(commit=False)
+        contact.customer = self.get_object().customer  # Keep the original customer
+
+        logger.info(f"Updating Contact ID: {contact.id}")  # Debugging
+        logger.info(f"New Name: {form.cleaned_data.get('name')}")
+        logger.info(f"New Email: {form.cleaned_data.get('email')}")
+        logger.info(f"New Phone: {form.cleaned_data.get('phone')}")
+        logger.info(f"New Relationship Score: {form.cleaned_data.get('relationship_score')}")
+        logger.info(f"Keeping Customer ID: {contact.customer.id}")  # Debugging
+
+        contact.save()  # ✅ Save the changes
+        messages.success(self.request, "Contact updated successfully!")
+        return super().form_valid(form)
+
+    def form_invalid(self, form):
+        """ Log errors if the form is invalid """
+        messages.error(self.request, "There were errors updating the contact.")
+        logger.error(f"FORM INVALID ERRORS: {form.errors}")  # Debugging
+        return super().form_invalid(form)
+
 
 @login_required
 def export_contacts(request):
@@ -143,7 +171,7 @@ def add_contact(request):
         form = ContactForm(request.POST)
         if form.is_valid():
             contact = form.save(commit=False)
-            # No additional processing needed; the phone number is already in the correct format
+            contact.phone = form.cleaned_data['phone']  # Ensure phone is stored
             contact.save()
             return redirect("crm:contact_list")
     else:
