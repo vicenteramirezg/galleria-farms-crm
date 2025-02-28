@@ -10,7 +10,7 @@ urlpatterns = [
     path('contact/<int:pk>/edit/', ContactUpdateView.as_view(), name='contact_edit'),
     path('export-contacts/', views.export_contacts, name='export_contacts'),
     path('customers/', views.customer_list, name='customer_list'),
-    path('contacts/', ContactListView.as_view(), name='contact_list'),
+    path('contacts/', views.contact_list, name='contact_list'),
     path('contacts/add/', views.add_contact, name='add_contact'),
     path('customers/add/', views.add_customer, name='add_customer'),  # Add this line to map the URL for add_customer
 ]

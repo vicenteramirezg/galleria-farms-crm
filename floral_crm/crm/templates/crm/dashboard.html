@@ -2,52 +2,98 @@
 
 {% block title %}Dashboard - Floral CRM{% endblock %}
 
-{% load humanize %}  <!-- Load humanize for intcomma formatting -->
+{% load humanize %}
 
 {% block content %}
-<!-- Header -->
 <div class="container py-5">
-    <h1 class="text-center display-4 font-weight-bold">Welcome, {{ request.user.get_full_name }}!</h1>
-    <h2 class="text-center mb-4">Your Customers</h2>
-
-    <!-- Customer List -->
-    {% for customer in customers %}
-        <div class="card mb-4 shadow-sm">
-            <div class="card-body">
-                <h3 class="card-title d-flex justify-content-between">
-                    <span><strong>{{ customer.name }}</strong> - ${{ customer.estimated_yearly_sales|floatformat:0|intcomma }}</span>  
-                    <!-- ✅ Removes decimals & formats properly -->
-                    <a href="{% url 'crm:customer_edit' customer.id %}" class="btn btn-sm btn-outline-primary">Edit Customer</a>
-                </h3>
-                <ul class="list-unstyled">
-                    {% for contact in customer.contacts.all %}
-                        <li class="d-flex justify-content-between align-items-center mb-3">
-                            <div>
-                                <strong>{{ contact.name }}</strong><br>
-                                <small>{{ contact.email }} | {{ contact.phone }}</small><br>
-                                <span class="badge badge-info">Score: {{ contact.relationship_score }}</span>
-                            </div>
-                            <a href="{% url 'crm:contact_edit' contact.id %}" class="btn btn-sm btn-outline-secondary">Edit Contact</a>
-                        </li>
-                    {% endfor %}
-                </ul>
+    <h1 class="text-center display-4 font-weight-bold">Dashboard</h1>
+    
+    <!-- Key Metrics Row -->
+    <div class="row text-center mb-4">
+        <div class="col-md-4">
+            <div class="p-4 bg-light rounded shadow-sm">
+                <h4>Total Estimated Sales</h4>
+                <p class="display-6 text-success">${{ total_sales|intcomma }}</p>
             </div>
         </div>
-    {% empty %}
-        <p class="text-center">No customers found.</p>
-    {% endfor %}
+        <div class="col-md-4">
+            <div class="p-4 bg-light rounded shadow-sm">
+                <h4>Total Contacts</h4>
+                <p class="display-6 text-primary">{{ total_contacts }}</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="p-4 bg-light rounded shadow-sm">
+                <h4>Avg. Relationship Score</h4>
+                <p class="display-6 text-warning">{{ avg_relationship_score|floatformat:2 }}</p>
+            </div>
+        </div>
+    </div>
 
-    <!-- Export Button -->
-    <div class="text-center">
-        <a href="{% url 'crm:export_contacts' %}" class="btn btn-success btn-lg">Export Contacts as CSV</a>
+    <!-- Top Customers (Chart) -->
+    <div class="row mb-5">
+        <div class="col-md-12">
+            <h2 class="text-center mb-3">Top 5 Customers by Sales</h2>
+            <canvas id="topCustomersChart" width="400" height="200"></canvas>
+        </div>
+    </div>
+
+    <!-- Customers Summary Table -->
+    <h2 class="mb-3">Customer Overview</h2>
+    <div class="table-responsive">
+        <table class="table table-striped shadow-sm">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Customer Name</th>
+                    <th>Estimated Sales</th>
+                    <th>Number of Contacts</th>
+                    <th>Avg. Relationship Score</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for customer in customers %}
+                <tr>
+                    <td>{{ customer.name }}</td>
+                    <td>${{ customer.sales|intcomma }}</td>
+                    <td>{{ customer.num_contacts }}</td>
+                    <td>{{ customer.avg_score|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 
 {% endblock %}
 
 {% block scripts %}
-<!-- Optional: Add any custom JavaScript if needed -->
+<!-- Load Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // Example of dynamic interactivity (if required)
+    document.addEventListener("DOMContentLoaded", function() {
+        var ctx = document.getElementById('topCustomersChart').getContext('2d');
+
+        var chart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: [{% for customer in top_customers %}"{{ customer.name }}",{% endfor %}],
+                datasets: [{
+                    label: 'Estimated Sales ($)',
+                    data: [{% for customer in top_customers %}{{ customer.estimated_yearly_sales }},{% endfor %}],
+                    backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    });
 </script>
 {% endblock %}

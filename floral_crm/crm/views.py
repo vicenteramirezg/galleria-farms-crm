@@ -2,6 +2,8 @@ from django.core.exceptions import PermissionDenied
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 import csv
+from django.db.models import Sum, Avg, Count
+from collections import defaultdict
 from django.views.decorators.csrf import csrf_exempt
 from django.urls import reverse
 from django.http import HttpResponse
@@ -55,18 +57,42 @@ class SalespersonAccessMixin:
 
 @login_required
 def dashboard(request):
-    user_profile = request.user.profile
+    """ Generates summary metrics for the salesperson's customers. """
 
-    if user_profile.is_executive():
-        customers = Customer.objects.all()  # Executives see all customers
-    else:
-        try:
-            salesperson = request.user.salesperson
-            customers = salesperson.customers.all()
-        except AttributeError:
-            customers = Customer.objects.none()
+    salesperson = request.user.salesperson
+    
+    # Fetch all customers under the logged-in salesperson
+    customers = Customer.objects.filter(salesperson=salesperson) \
+                                .prefetch_related("contacts")
 
-    return render(request, 'crm/dashboard.html', {'customers': customers})
+    # Calculate key statistics
+    total_sales = customers.aggregate(Sum("estimated_yearly_sales"))["estimated_yearly_sales__sum"] or 0
+    total_contacts = Contact.objects.filter(customer__salesperson=salesperson).count()
+    avg_relationship_score = Contact.objects.filter(customer__salesperson=salesperson) \
+                                            .aggregate(Avg("relationship_score"))["relationship_score__avg"] or 0
+
+    # Prepare data for top customers
+    top_customers = customers.order_by("-estimated_yearly_sales")[:5]  # Top 5 by sales
+
+    # Enrich customer data with aggregated contact stats
+    customer_data = []
+    for customer in customers:
+        num_contacts = customer.contacts.count()
+        avg_score = customer.contacts.aggregate(Avg("relationship_score"))["relationship_score__avg"] or 0
+        customer_data.append({
+            "name": customer.name,
+            "sales": customer.estimated_yearly_sales,
+            "num_contacts": num_contacts,
+            "avg_score": avg_score
+        })
+
+    return render(request, "crm/dashboard.html", {
+        "customers": customer_data,
+        "total_sales": total_sales,
+        "total_contacts": total_contacts,
+        "avg_relationship_score": round(avg_relationship_score, 2),
+        "top_customers": top_customers
+    })
 
 class CustomerUpdateView(LoginRequiredMixin, SalespersonAccessMixin, UpdateView):
     model = Customer
@@ -185,8 +211,32 @@ def add_customer(request):
 
 @login_required
 def customer_list(request):
-    customers = Customer.objects.filter(salesperson=request.user.salesperson)
-    return render(request, 'crm/customer_list.html', {'customers': customers})
+    """ Fetch customers, group them by department, and order them alphabetically """
+    customers = Customer.objects.filter(salesperson=request.user.salesperson).order_by('department', 'name')
+
+    # Group customers by department
+    grouped_customers = defaultdict(list)
+    for customer in customers:
+        grouped_customers[customer.department].append(customer)
+
+    return render(request, 'crm/customer_list.html', {'grouped_customers': dict(grouped_customers)})
+
+@login_required
+def contact_list(request):
+    """ Groups contacts by department → customer → ordered contacts """
+    
+    # Fetch all customers with contacts under the logged-in salesperson, ordered by department and name
+    customers = Customer.objects.filter(salesperson=request.user.salesperson) \
+                                .prefetch_related('contacts') \
+                                .order_by("department", "name")
+
+    grouped_contacts = defaultdict(list)
+
+    # Organize customers under their respective departments
+    for customer in customers:
+        grouped_contacts[customer.department].append(customer)
+
+    return render(request, "crm/contact_list.html", {"grouped_contacts": dict(grouped_contacts)})
 
 class ContactListView(LoginRequiredMixin, ListView):
     model = Contact

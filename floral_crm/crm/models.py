@@ -23,12 +23,33 @@ class Salesperson(models.Model):
         return f"{self.user.get_full_name()} - {self.phone}"
 
 class Customer(models.Model):
+    MASS_MARKET = 'mass_market'
+    MM2 = 'mm2'
+    ECOMMERCE = 'ecommerce'
+    WHOLESALE = 'wholesale'
+
+    DEPARTMENT_CHOICES = [
+        (MASS_MARKET, 'Mass Market'),
+        (MM2, 'MM2'),
+        (ECOMMERCE, 'Ecommerce'),
+        (WHOLESALE, 'Wholesale'),
+    ]
+
     name = models.CharField(max_length=255)
     estimated_yearly_sales = models.IntegerField()
     salesperson = models.ForeignKey(Salesperson, on_delete=models.CASCADE, related_name='customers')
+    department = models.CharField(
+        max_length=20,
+        choices=DEPARTMENT_CHOICES,
+        default=MASS_MARKET
+    )
+
+    def get_department_display(self):
+        """ Returns the human-readable department name instead of the stored value """
+        return dict(self.DEPARTMENT_CHOICES).get(self.department, "No Department")
 
     def __str__(self):
-        return self.name
+        return f"{self.name} - {self.get_department_display()}"
 
 class Contact(models.Model):
     name = models.CharField(max_length=255)

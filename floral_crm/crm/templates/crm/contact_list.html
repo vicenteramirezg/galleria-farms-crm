@@ -11,45 +11,51 @@
         <a href="{% url 'crm:add_contact' %}" class="btn btn-primary btn-lg">Add Contact</a>
     </div>
 
-    <!-- Group Contacts by Customer -->
-    {% if contacts %}
-        {% regroup contacts by customer as grouped_contacts %}
-        {% for customer in grouped_contacts %}
+    <!-- Group Contacts by Department & Then by Customer -->
+    {% if grouped_contacts %}
+        {% for department, customers in grouped_contacts.items %}
             <div class="mb-5">
-                <h2 class="mb-4">{{ customer.grouper.name }}</h2>
-                <div class="row">
-                    {% for contact in customer.list %}
-                        <div class="col-md-6 col-lg-4 mb-4">
-                            <div class="card shadow-sm h-100">
-                                <div class="card-body">
-                                    <h3 class="card-title d-flex justify-content-between align-items-center">
-                                        <span><strong>{{ contact.name }}</strong></span>
-                                        <a href="{% url 'crm:contact_edit' contact.id %}" class="btn btn-sm btn-outline-primary">Edit</a>
-                                    </h3>
-                                    <ul class="list-unstyled">
-                                        <li class="mb-2">
-                                            <strong>Email:</strong> {{ contact.email }}
-                                        </li>
-                                        <li class="mb-2">
-                                            <strong>Phone:</strong> {{ contact.phone }}
-                                        </li>
-                                        <li class="mb-2">
-                                            <strong>Birthday:</strong> {{ contact.birthday|default:"Not provided" }}
-                                        </li>
-                                        <li class="mb-2">
-                                            <span class="badge bg-info">Score: {{ contact.relationship_score }}</span>
-                                        </li>
-                                        <li class="mb-2">
-                                            <a href="https://wa.me/{{ contact.whatsapp_format }}" class="btn btn-success btn-sm" target="_blank">
-                                                <i class="fab fa-whatsapp"></i> Chat on WhatsApp
-                                            </a>
-                                        </li>
-                                    </ul>
+                <h2 class="text-primary">{{ customers.0.get_department_display }}</h2> <!-- ✅ Department Name -->
+                <hr>
+                
+                {% for customer in customers %}
+                    <div class="mb-4">
+                        <h3 class="text-dark">{{ customer.name }}</h3>
+                        <div class="row">
+                            {% for contact in customer.contacts.all|dictsort:"name" %}  <!-- ✅ Sort Contacts by Name -->
+                                <div class="col-md-6 col-lg-4 mb-4">
+                                    <div class="card shadow-sm h-100">
+                                        <div class="card-body">
+                                            <h3 class="card-title d-flex justify-content-between align-items-center">
+                                                <span><strong>{{ contact.name }}</strong></span>
+                                                <a href="{% url 'crm:contact_edit' contact.id %}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                            </h3>
+                                            <ul class="list-unstyled">
+                                                <li class="mb-2">
+                                                    <strong>Email:</strong> {{ contact.email }}
+                                                </li>
+                                                <li class="mb-2">
+                                                    <strong>Phone:</strong> {{ contact.phone }}
+                                                </li>
+                                                <li class="mb-2">
+                                                    <strong>Birthday:</strong> {{ contact.birthday|default:"Not provided" }}
+                                                </li>
+                                                <li class="mb-2">
+                                                    <span class="badge bg-info">Score: {{ contact.relationship_score }}</span>
+                                                </li>
+                                                <li class="mb-2">
+                                                    <a href="https://wa.me/{{ contact.whatsapp_format }}" class="btn btn-success btn-sm" target="_blank">
+                                                        <i class="fab fa-whatsapp"></i> Chat on WhatsApp
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
+                            {% endfor %}
                         </div>
-                    {% endfor %}
-                </div>
+                    </div>
+                {% endfor %}
             </div>
         {% endfor %}
     {% else %}

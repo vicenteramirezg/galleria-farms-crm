@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 class CustomerForm(forms.ModelForm):
     class Meta:
         model = Customer
-        fields = ['name', 'estimated_yearly_sales']
+        fields = ['name', 'estimated_yearly_sales', 'department']
 
     def clean_estimated_yearly_sales(self):
         sales = self.cleaned_data.get('estimated_yearly_sales')
