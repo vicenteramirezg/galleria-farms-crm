@@ -35,6 +35,12 @@
                                 <li><strong>Birthday:</strong> {{ contact.birthday|default:"Not provided" }}</li>
                                 <li><strong>Relationship Score:</strong> {{ contact.relationship_score }}</li>
                             </ul>
+
+                            <!-- ✅ WhatsApp Chat Button -->
+                            <a href="https://wa.me/{{ contact.whatsapp_format }}" class="btn btn-success btn-sm mb-2" target="_blank">
+                                <i class="fab fa-whatsapp"></i> Chat on WhatsApp
+                            </a>
+
                             <a href="{% url 'crm:contact_edit' contact.id %}" class="btn btn-sm btn-outline-primary">Edit Contact</a>
                         </div>
                     </div>
