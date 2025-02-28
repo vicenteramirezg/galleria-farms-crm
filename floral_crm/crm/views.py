@@ -9,7 +9,7 @@ from django.urls import reverse
 from django.http import HttpResponse
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views import View
-from django.views.generic import ListView, UpdateView, CreateView
+from django.views.generic import ListView, UpdateView, CreateView, DetailView
 from django.urls import reverse_lazy
 from .models import Customer, Contact, Salesperson, Profile, Role
 from django.contrib.auth import login, logout
@@ -203,11 +203,14 @@ def add_customer(request):
             customer = form.save(commit=False)
             customer.salesperson = request.user.salesperson  # Assign salesperson
             customer.save()
-            return redirect(reverse('crm:dashboard'))  # Use 'crm:dashboard' with the namespace
+            return redirect("crm:customer_list")
+        else:
+            print("Form errors:", form.errors)  # ✅ Debugging
     else:
         form = CustomerForm()
     
-    return render(request, 'crm/add_customer.html', {'form': form})
+    return render(request, "crm/add_customer.html", {"form": form})
+
 
 @login_required
 def customer_list(request):
@@ -260,3 +263,25 @@ def add_contact(request):
         form = ContactForm()
     
     return render(request, "crm/add_contact.html", {"form": form})
+
+class CustomerDetailView(LoginRequiredMixin, DetailView):
+    model = Customer
+    template_name = "crm/customer_detail.html"
+    context_object_name = "customer"
+
+    def get_context_data(self, **kwargs):
+        """Add additional customer-related data."""
+        context = super().get_context_data(**kwargs)
+        customer = self.get_object()
+
+        # Get all contacts related to the customer
+        contacts = customer.contacts.all()
+        
+        # ✅ Fix: Use Avg from django.db.models
+        avg_relationship_score = contacts.aggregate(avg_score=Avg("relationship_score"))["avg_score"]
+
+        context.update({
+            "contacts": contacts,
+            "avg_relationship_score": avg_relationship_score if avg_relationship_score else "No scores yet",
+        })
+        return context

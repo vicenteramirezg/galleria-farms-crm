@@ -35,7 +35,7 @@ class Customer(models.Model):
         (WHOLESALE, 'Wholesale'),
     ]
 
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=255, unique=True)
     estimated_yearly_sales = models.IntegerField()
     salesperson = models.ForeignKey(Salesperson, on_delete=models.CASCADE, related_name='customers')
     department = models.CharField(

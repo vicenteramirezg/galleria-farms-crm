@@ -127,7 +127,7 @@ STATIC_URL = "/static/"
 
 # This is to serve static files during development
 STATICFILES_DIRS = [
-    BASE_DIR / "floral_crm" / "static",  # ✅ Use correct static folder
+    os.path.join(BASE_DIR, "static"),  # ✅ Ensures correct static path
 ]
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
@@ -136,3 +136,8 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# This ensures Django serves static files in development mode
+if DEBUG:
+    import mimetypes
+    mimetypes.add_type("image/x-icon", ".ico", True)

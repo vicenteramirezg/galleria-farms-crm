@@ -6,7 +6,8 @@
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/x-icon" href="{% static 'favicon.ico' %}">
+    <link rel="icon" type="image/x-icon" href="{% static 'img/favicon.ico' %}">
+    <link rel="shortcut icon" href="{% static 'img/favicon.ico' %}">
     <title>{% block title %}Galleria Farms CRM{% endblock %}</title>
     
     <!-- Font Awesome for icons -->
@@ -28,8 +29,10 @@
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-            <!-- Brand Name -->
-            <a class="navbar-brand" href="{% url 'home' %}">Galleria Farms CRM</a>
+            <!-- Logo & Brand Name -->
+            <a class="navbar-brand d-flex align-items-center" href="{% url 'home' %}">
+                <img src="{% static 'img/logo_white.png' %}" alt="Galleria Farms Logo" height="40" class="me-2">
+            </a>
 
             <!-- Hamburger Button for Mobile -->
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"

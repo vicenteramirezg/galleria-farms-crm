@@ -22,10 +22,9 @@
                     <div class="col-md-6 col-lg-4 mb-4">
                         <div class="card shadow-sm h-100">
                             <div class="card-body">
-                                <h3 class="card-title d-flex justify-content-between align-items-center">
-                                    <span><strong>{{ customer.name }}</strong></span>
-                                    <a href="{% url 'crm:customer_edit' customer.id %}" class="btn btn-sm btn-outline-primary">Edit</a>
-                                </h3>
+                                <h3 class="card-title">
+                                    <a href="{% url 'crm:customer_detail' customer.id %}"><strong>{{ customer.name }}</strong></a>
+                                </h3>                                
 
                                 <!-- Estimated Yearly Sales -->
                                 <h6 class="text-muted mb-3">Estimated Yearly Sales: ${{ customer.estimated_yearly_sales|intcomma }}</h6>

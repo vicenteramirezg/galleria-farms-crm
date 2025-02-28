@@ -29,6 +29,16 @@ class CustomerForm(forms.ModelForm):
         logger.info(f"✅ Cleaned value: {sales} (Type: {type(sales)})")
 
         return sales
+    
+    def clean_name(self):
+        name = self.cleaned_data.get('name')
+
+        # Check if a customer with the same name already exists
+        if Customer.objects.filter(name__iexact=name).exists():
+            raise forms.ValidationError("A customer with this name already exists.")
+
+        return name
+
 
 class ContactForm(forms.ModelForm):
     class Meta:

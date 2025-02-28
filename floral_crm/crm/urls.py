@@ -1,6 +1,6 @@
 from django.urls import path
 from . import views
-from .views import dashboard, CustomerUpdateView, ContactUpdateView, add_customer, ContactListView  # Make sure add_customer is imported
+from .views import dashboard, CustomerUpdateView, ContactUpdateView, add_customer, ContactListView, CustomerDetailView  # Make sure add_customer is imported
 
 app_name = 'crm'  # Add this line to set a namespace for your app
 
@@ -13,4 +13,5 @@ urlpatterns = [
     path('contacts/', views.contact_list, name='contact_list'),
     path('contacts/add/', views.add_contact, name='add_contact'),
     path('customers/add/', views.add_customer, name='add_customer'),  # Add this line to map the URL for add_customer
+    path("customer/<int:pk>/", CustomerDetailView.as_view(), name="customer_detail"),  # ✅ Correct
 ]

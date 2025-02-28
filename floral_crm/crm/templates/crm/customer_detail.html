@@ -1,0 +1,53 @@
+{% extends "crm/base.html" %}
+
+{% block title %}{{ customer.name }} - Profile{% endblock %}
+
+{% load humanize %}
+
+{% block content %}
+<div class="container py-5">
+    <h1 class="text-center display-4 font-weight-bold">{{ customer.name }}</h1>
+
+    <!-- Customer Details -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+            <h3 class="card-title">Customer Details</h3>
+            <ul class="list-unstyled">
+                <li><strong>Department:</strong> {{ customer.get_department_display }}</li>
+                <li><strong>Estimated Yearly Sales:</strong> ${{ customer.estimated_yearly_sales|intcomma }}</li>
+                <li><strong>Average Relationship Score:</strong> {{ avg_relationship_score }}</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Contacts Section -->
+    <h3 class="mt-4">Contacts</h3>
+    {% if contacts %}
+        <div class="row">
+            {% for contact in contacts %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body">
+                            <h4 class="card-title">{{ contact.name }}</h4>
+                            <ul class="list-unstyled">
+                                <li><strong>Email:</strong> {{ contact.email }}</li>
+                                <li><strong>Phone:</strong> {{ contact.phone }}</li>
+                                <li><strong>Birthday:</strong> {{ contact.birthday|default:"Not provided" }}</li>
+                                <li><strong>Relationship Score:</strong> {{ contact.relationship_score }}</li>
+                            </ul>
+                            <a href="{% url 'crm:contact_edit' contact.id %}" class="btn btn-sm btn-outline-primary">Edit Contact</a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>No contacts found for this customer.</p>
+    {% endif %}
+
+    <!-- Back Button -->
+    <div class="text-center mt-4">
+        <a href="{% url 'crm:customer_list' %}" class="btn btn-secondary">Back to Customers</a>
+    </div>
+</div>
+{% endblock %}
