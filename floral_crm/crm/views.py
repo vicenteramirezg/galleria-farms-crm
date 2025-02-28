@@ -151,14 +151,23 @@ def export_contacts(request):
 class CustomerCreateView(LoginRequiredMixin, CreateView):
     model = Customer
     form_class = CustomerForm
-    template_name = 'crm/customer_form.html'
-    success_url = reverse_lazy('crm:dashboard')
+    template_name = 'crm/add_customer.html'
+    success_url = reverse_lazy('crm:customer_list')
 
     def form_valid(self, form):
-        customer = form.save(commit=False)
-        customer.salesperson = self.request.user.salesperson
-        customer.save()
-        return super().form_valid(form)
+        """ Ensure salesperson is set before saving """
+        form.instance.salesperson = self.request.user.salesperson
+
+        # 🔹 Log cleaned form data
+        logger.info(f"🔹 Form Data Before Saving: {form.cleaned_data}")
+
+        response = super().form_valid(form)
+
+        # 🔥 Fetch newly created customer from the database
+        new_customer = get_object_or_404(Customer, id=form.instance.id)
+        logger.info(f"✅ New Customer Created: {new_customer.name}, Sales: {new_customer.estimated_yearly_sales}")
+
+        return response
 
 @login_required
 def add_customer(request):

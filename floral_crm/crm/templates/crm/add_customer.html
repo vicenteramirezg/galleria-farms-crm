@@ -27,7 +27,7 @@
         <form method="post">
             {% csrf_token %}
             
-            <!-- Customer Form Fields -->
+            <!-- Customer Name -->
             <div class="mb-3">
                 <label for="id_name" class="form-label font-weight-bold">Customer Name:</label>
                 <input type="text" name="name" value="{{ form.name.value|default_if_none:'' }}" 
@@ -36,12 +36,13 @@
 
             <!-- Estimated Yearly Sales -->
             <div class="mb-3">
-                <label for="id_estimated_yearly_sales" class="form-label font-weight-bold">Estimated Yearly Sales:</label>
-                <input type="text" name="estimated_yearly_sales" 
-                       id="id_estimated_yearly_sales"
-                       class="form-control"
-                       value="{{ form.estimated_yearly_sales.value|default_if_none:''|floatformat:0|intcomma }}" 
-                       required>
+                <label for="id_estimated_yearly_sales_display" class="form-label font-weight-bold">
+                    Estimated Yearly Sales:
+                </label>
+                <!-- Visible field (formatted) -->
+                <input type="text" id="id_estimated_yearly_sales_display" class="form-control" required>
+                <!-- Hidden field that actually gets submitted -->
+                <input type="hidden" id="id_estimated_yearly_sales" name="estimated_yearly_sales">
             </div>
 
             <!-- Submit Button -->
@@ -56,20 +57,34 @@
 <!-- JavaScript to Format Sales Number While Typing -->
 <script>
     document.addEventListener("DOMContentLoaded", function() {
-        var salesInput = document.getElementById("id_estimated_yearly_sales");
+        var displayInput = document.getElementById("id_estimated_yearly_sales_display");
+        var hiddenInput = document.getElementById("id_estimated_yearly_sales");
 
         function formatNumber(value) {
             return value.replace(/\D/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, ",");
         }
 
-        salesInput.addEventListener("input", function(e) {
-            var rawValue = this.value.replace(/,/g, "");  // Remove existing commas
-            var formattedValue = formatNumber(rawValue);  // Apply formatting
-            this.value = formattedValue;
+        // Ensure display input shows the formatted number on page load (if any)
+        if (hiddenInput.value) {
+            displayInput.value = formatNumber(hiddenInput.value);
+        }
+
+        // Listen for input event on display field
+        displayInput.addEventListener("input", function() {
+            var rawValue = displayInput.value.replace(/,/g, ""); // Remove commas
+            displayInput.value = formatNumber(rawValue); // Format again
+            hiddenInput.value = rawValue;  // Sync raw numeric value to hidden field
         });
 
-        document.querySelector("form").addEventListener("submit", function() {
-            salesInput.value = salesInput.value.replace(/,/g, "");  // Remove commas before submitting
+        // Before submitting, ensure the hidden input is updated with the raw numeric value
+        document.querySelector("form").addEventListener("submit", function(event) {
+            var rawValue = displayInput.value.replace(/,/g, ""); // Remove commas
+            if (!rawValue.match(/^\d+$/)) {  // Ensure it's a valid whole number
+                event.preventDefault();
+                alert("Estimated yearly sales must be a whole number.");
+                return;
+            }
+            hiddenInput.value = rawValue;  // Sync value before submission
         });
     });
 </script>

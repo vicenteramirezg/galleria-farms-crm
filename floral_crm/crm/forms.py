@@ -23,6 +23,9 @@ class CustomerForm(forms.ModelForm):
             except ValueError:
                 raise forms.ValidationError("Enter a valid number.")
 
+        if isinstance(sales, float):  # Prevent decimal inputs
+            sales = int(sales)
+
         logger.info(f"✅ Cleaned value: {sales} (Type: {type(sales)})")
 
         return sales
