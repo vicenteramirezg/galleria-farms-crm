@@ -1,19 +1,25 @@
 from django.core.exceptions import PermissionDenied
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 import csv
+from django.db.models import Sum, Avg, Count
+from collections import defaultdict
 from django.views.decorators.csrf import csrf_exempt
 from django.urls import reverse
 from django.http import HttpResponse
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views import View
-from django.views.generic import ListView, UpdateView, CreateView
+from django.views.generic import ListView, UpdateView, CreateView, DetailView
 from django.urls import reverse_lazy
 from .models import Customer, Contact, Salesperson, Profile, Role
 from django.contrib.auth import login, logout
 from .forms import CustomerForm, ContactForm, SignupForm  # Ensure you have this form
 from django.http import HttpResponseNotAllowed
 from django.utils.decorators import method_decorator
+from django.contrib import messages
+import logging
+
+logger = logging.getLogger(__name__)  # Setup logging for debugging
 
 def home(request):
     return render(request, 'home.html')
@@ -51,36 +57,107 @@ class SalespersonAccessMixin:
 
 @login_required
 def dashboard(request):
-    user_profile = request.user.profile
+    """ Generates summary metrics for the salesperson's customers. """
 
-    if user_profile.is_executive():
-        customers = Customer.objects.all()  # Executives see all customers
-    else:
-        try:
-            salesperson = request.user.salesperson
-            customers = salesperson.customers.all()
-        except AttributeError:
-            customers = Customer.objects.none()
+    salesperson = request.user.salesperson
+    
+    # Fetch all customers under the logged-in salesperson
+    customers = Customer.objects.filter(salesperson=salesperson) \
+                                .prefetch_related("contacts")
 
-    return render(request, 'crm/dashboard.html', {'customers': customers})
+    # Calculate key statistics
+    total_sales = customers.aggregate(Sum("estimated_yearly_sales"))["estimated_yearly_sales__sum"] or 0
+    total_contacts = Contact.objects.filter(customer__salesperson=salesperson).count()
+    avg_relationship_score = Contact.objects.filter(customer__salesperson=salesperson) \
+                                            .aggregate(Avg("relationship_score"))["relationship_score__avg"] or 0
+
+    # Prepare data for top customers
+    top_customers = customers.order_by("-estimated_yearly_sales")[:5]  # Top 5 by sales
+
+    # Enrich customer data with aggregated contact stats
+    customer_data = []
+    for customer in customers:
+        num_contacts = customer.contacts.count()
+        avg_score = customer.contacts.aggregate(Avg("relationship_score"))["relationship_score__avg"] or 0
+        customer_data.append({
+            "name": customer.name,
+            "sales": customer.estimated_yearly_sales,
+            "num_contacts": num_contacts,
+            "avg_score": avg_score
+        })
+
+    return render(request, "crm/dashboard.html", {
+        "customers": customer_data,
+        "total_sales": total_sales,
+        "total_contacts": total_contacts,
+        "avg_relationship_score": round(avg_relationship_score, 2),
+        "top_customers": top_customers
+    })
 
 class CustomerUpdateView(LoginRequiredMixin, SalespersonAccessMixin, UpdateView):
     model = Customer
-    fields = ['name', 'estimated_yearly_sales']
+    form_class = CustomerForm
     template_name = 'crm/customer_form.html'
-    success_url = reverse_lazy('crm:dashboard')
+    success_url = reverse_lazy('crm:customer_list')
 
     def get_queryset(self):
-        return self.request.user.salesperson.customers.all()
+        """ Ensure the salesperson can only edit their own customers """
+        queryset = Customer.objects.filter(salesperson=self.request.user.salesperson)
+        logger.info(f"CustomerEditView - Filtering customers for salesperson {self.request.user.salesperson}: {queryset}")
+        return queryset
+
+    def form_valid(self, form):
+        """ Ensure salesperson remains unchanged and log the exact form data received """
+        form.instance.salesperson = self.request.user.salesperson  # Keep salesperson unchanged
+
+        # 🛑 Log the form's raw input data
+        logger.info(f"🔹 Form Data Before Saving: {form.cleaned_data}")
+
+        response = super().form_valid(form)
+
+        # 🔥 Fetch updated customer directly from the database to verify
+        updated_customer = get_object_or_404(Customer, id=form.instance.id)
+        logger.info(f"✅ Database After Update: {updated_customer.name}, Sales: {updated_customer.estimated_yearly_sales}")
+
+        return response
+
+    def form_invalid(self, form):
+        """ Log invalid form submissions """
+        logger.error(f"CustomerEditView - FORM INVALID: {form.errors}")
+        return super().form_invalid(form)
 
 class ContactUpdateView(LoginRequiredMixin, UpdateView):
     model = Contact
-    fields = ['name', 'phone', 'email', 'relationship_score']
+    form_class = ContactForm  
     template_name = 'crm/contact_form.html'
-    success_url = reverse_lazy('crm:dashboard')
+    success_url = reverse_lazy('crm:contact_list')
 
     def get_queryset(self):
+        """ Ensure the user can only edit their own contacts """
         return Contact.objects.filter(customer__salesperson=self.request.user.salesperson)
+
+    def form_valid(self, form):
+        """ Ensure the customer is always set automatically """
+        contact = form.save(commit=False)
+        contact.customer = self.get_object().customer  # Keep the original customer
+
+        logger.info(f"Updating Contact ID: {contact.id}")  # Debugging
+        logger.info(f"New Name: {form.cleaned_data.get('name')}")
+        logger.info(f"New Email: {form.cleaned_data.get('email')}")
+        logger.info(f"New Phone: {form.cleaned_data.get('phone')}")
+        logger.info(f"New Relationship Score: {form.cleaned_data.get('relationship_score')}")
+        logger.info(f"Keeping Customer ID: {contact.customer.id}")  # Debugging
+
+        contact.save()  # ✅ Save the changes
+        messages.success(self.request, "Contact updated successfully!")
+        return super().form_valid(form)
+
+    def form_invalid(self, form):
+        """ Log errors if the form is invalid """
+        messages.error(self.request, "There were errors updating the contact.")
+        logger.error(f"FORM INVALID ERRORS: {form.errors}")  # Debugging
+        return super().form_invalid(form)
+
 
 @login_required
 def export_contacts(request):
@@ -100,14 +177,23 @@ def export_contacts(request):
 class CustomerCreateView(LoginRequiredMixin, CreateView):
     model = Customer
     form_class = CustomerForm
-    template_name = 'crm/customer_form.html'
-    success_url = reverse_lazy('crm:dashboard')
+    template_name = 'crm/add_customer.html'
+    success_url = reverse_lazy('crm:customer_list')
 
     def form_valid(self, form):
-        customer = form.save(commit=False)
-        customer.salesperson = self.request.user.salesperson
-        customer.save()
-        return super().form_valid(form)
+        """ Ensure salesperson is set before saving """
+        form.instance.salesperson = self.request.user.salesperson
+
+        # 🔹 Log cleaned form data
+        logger.info(f"🔹 Form Data Before Saving: {form.cleaned_data}")
+
+        response = super().form_valid(form)
+
+        # 🔥 Fetch newly created customer from the database
+        new_customer = get_object_or_404(Customer, id=form.instance.id)
+        logger.info(f"✅ New Customer Created: {new_customer.name}, Sales: {new_customer.estimated_yearly_sales}")
+
+        return response
 
 @login_required
 def add_customer(request):
@@ -117,16 +203,43 @@ def add_customer(request):
             customer = form.save(commit=False)
             customer.salesperson = request.user.salesperson  # Assign salesperson
             customer.save()
-            return redirect(reverse('crm:dashboard'))  # Use 'crm:dashboard' with the namespace
+            return redirect("crm:customer_list")
+        else:
+            print("Form errors:", form.errors)  # ✅ Debugging
     else:
         form = CustomerForm()
     
-    return render(request, 'crm/add_customer.html', {'form': form})
+    return render(request, "crm/add_customer.html", {"form": form})
+
 
 @login_required
 def customer_list(request):
-    customers = Customer.objects.filter(salesperson=request.user.salesperson)
-    return render(request, 'crm/customer_list.html', {'customers': customers})
+    """ Fetch customers, group them by department, and order them alphabetically """
+    customers = Customer.objects.filter(salesperson=request.user.salesperson).order_by('department', 'name')
+
+    # Group customers by department
+    grouped_customers = defaultdict(list)
+    for customer in customers:
+        grouped_customers[customer.department].append(customer)
+
+    return render(request, 'crm/customer_list.html', {'grouped_customers': dict(grouped_customers)})
+
+@login_required
+def contact_list(request):
+    """ Groups contacts by department → customer → ordered contacts """
+    
+    # Fetch all customers with contacts under the logged-in salesperson, ordered by department and name
+    customers = Customer.objects.filter(salesperson=request.user.salesperson) \
+                                .prefetch_related('contacts') \
+                                .order_by("department", "name")
+
+    grouped_contacts = defaultdict(list)
+
+    # Organize customers under their respective departments
+    for customer in customers:
+        grouped_contacts[customer.department].append(customer)
+
+    return render(request, "crm/contact_list.html", {"grouped_contacts": dict(grouped_contacts)})
 
 class ContactListView(LoginRequiredMixin, ListView):
     model = Contact
@@ -143,10 +256,32 @@ def add_contact(request):
         form = ContactForm(request.POST)
         if form.is_valid():
             contact = form.save(commit=False)
-            contact.customer.salesperson = request.user.salesperson  # Assign salesperson
+            contact.phone = form.cleaned_data['phone']  # Ensure phone is stored
             contact.save()
-            return redirect(reverse('crm:contact_list'))
+            return redirect("crm:contact_list")
     else:
         form = ContactForm()
     
-    return render(request, 'crm/add_contact.html', {'form': form})
+    return render(request, "crm/add_contact.html", {"form": form})
+
+class CustomerDetailView(LoginRequiredMixin, DetailView):
+    model = Customer
+    template_name = "crm/customer_detail.html"
+    context_object_name = "customer"
+
+    def get_context_data(self, **kwargs):
+        """Add additional customer-related data."""
+        context = super().get_context_data(**kwargs)
+        customer = self.get_object()
+
+        # Get all contacts related to the customer
+        contacts = customer.contacts.all()
+        
+        # ✅ Fix: Use Avg from django.db.models
+        avg_relationship_score = contacts.aggregate(avg_score=Avg("relationship_score"))["avg_score"]
+
+        context.update({
+            "contacts": contacts,
+            "avg_relationship_score": avg_relationship_score if avg_relationship_score else "No scores yet",
+        })
+        return context

@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -28,12 +29,13 @@ LOGIN_REDIRECT_URL = '/crm/dashboard/'  # Redirect users here after logging in
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '10.1.60.107']
 
 
 # Application definition
 
 INSTALLED_APPS = [
+    'django.contrib.humanize',
     'crm',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -125,7 +127,7 @@ STATIC_URL = "/static/"
 
 # This is to serve static files during development
 STATICFILES_DIRS = [
-    BASE_DIR / "crm" / "templates" / "static",
+    os.path.join(BASE_DIR, "static"),  # ✅ Ensures correct static path
 ]
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
@@ -134,3 +136,8 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# This ensures Django serves static files in development mode
+if DEBUG:
+    import mimetypes
+    mimetypes.add_type("image/x-icon", ".ico", True)
