@@ -30,7 +30,7 @@
                                             <small>{{ contact.email }} | {{ contact.phone }}</small><br>
                                             <span class="badge bg-info">Score: {{ contact.relationship_score }}</span>
                                         </div>
-                                        <a href="{% url 'crm:edit_contact' contact.id %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                                        <a href="{% url 'crm:contact_edit' contact.id %}" class="btn btn-sm btn-outline-secondary">Edit</a>
                                     </li>
                                 {% endfor %}
                             </ul>

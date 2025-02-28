@@ -18,7 +18,9 @@
             <!-- Phone Field -->
             <div class="mb-3">
                 <label for="id_phone" class="form-label font-weight-bold">Phone:</label>
-                <input type="text" id="id_phone" name="phone" class="form-control" value="{{ form.phone.value }}">
+                <input type="tel" id="id_phone" name="phone_display" class="form-control" value="{{ form.phone.value }}">
+                <!-- Hidden input to store the full international number -->
+                <input type="hidden" id="id_phone_full" name="phone">
             </div>
 
             <!-- Email Field -->
@@ -29,16 +31,102 @@
 
             <!-- Relationship Score Field -->
             <div class="mb-3">
-                <label for="id_relationship_score" class="form-label font-weight-bold">Relationship Score:</label>
-                <input type="number" id="id_relationship_score" name="relationship_score" class="form-control" value="{{ form.relationship_score.value }}" min="0" max="100">
+                <label class="form-label font-weight-bold d-block">Relationship Score:</label>
+                <div class="star-rating">
+                    <input type="radio" id="star5" name="relationship_score" value="5" {% if form.relationship_score.value == 5 %}checked{% endif %}>
+                    <label for="star5" title="5 stars">&#9733;</label>
+
+                    <input type="radio" id="star4" name="relationship_score" value="4" {% if form.relationship_score.value == 4 %}checked{% endif %}>
+                    <label for="star4" title="4 stars">&#9733;</label>
+
+                    <input type="radio" id="star3" name="relationship_score" value="3" {% if form.relationship_score.value == 3 %}checked{% endif %}>
+                    <label for="star3" title="3 stars">&#9733;</label>
+
+                    <input type="radio" id="star2" name="relationship_score" value="2" {% if form.relationship_score.value == 2 %}checked{% endif %}>
+                    <label for="star2" title="2 stars">&#9733;</label>
+
+                    <input type="radio" id="star1" name="relationship_score" value="1" {% if form.relationship_score.value == 1 %}checked{% endif %}>
+                    <label for="star1" title="1 star">&#9733;</label>
+                </div>
             </div>
 
             <!-- Form Actions -->
             <div class="d-flex justify-content-between">
                 <button type="submit" class="btn btn-primary">Save Changes</button>
-                <a href="{% url 'dashboard' %}" class="btn btn-secondary">Cancel</a>
+                <a href="{% url 'crm:dashboard' %}" class="btn btn-secondary">Cancel</a>
             </div>
         </form>
     </div>
 </div>
+
+<!-- Load intl-tel-input for phone formatting -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/css/intlTelInput.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/intlTelInput.min.js"></script>
+
+<!-- Custom CSS for star rating -->
+<style>
+    .star-rating {
+        direction: rtl;
+        font-size: 2rem;
+        display: flex;
+        justify-content: flex-start; /* Align stars to the left */
+        gap: 5px;
+    }
+    .star-rating input {
+        display: none;
+    }
+    .star-rating label {
+        color: #ccc;
+        cursor: pointer;
+    }
+    .star-rating input:checked ~ label {
+        color: #ffcc00;
+    }
+    .star-rating label:hover,
+    .star-rating label:hover ~ label {
+        color: #ffcc00;
+    }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Initialize intl-tel-input for phone field
+        var phoneInput = document.querySelector("#id_phone");
+        var hiddenInput = document.querySelector("#id_phone_full");
+        var iti = window.intlTelInput(phoneInput, {
+            initialCountry: "us",
+            separateDialCode: true,
+            preferredCountries: ["us", "co", "ca"],
+            utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/utils.js"
+        });
+
+        // Set the initial value of the hidden input to the current phone number
+        hiddenInput.value = "{{ form.phone.value }}";
+
+        // Format phone number as user types (frontend only)
+        phoneInput.addEventListener("input", function() {
+            let phoneNumber = phoneInput.value.replace(/\D/g, '');
+            if (phoneNumber.length > 6) {
+                phoneNumber = phoneNumber.replace(/(\d{3})(\d{3})(\d{0,4})/, "$1-$2-$3");
+            } else if (phoneNumber.length > 3) {
+                phoneNumber = phoneNumber.replace(/(\d{3})(\d{0,3})/, "$1-$2");
+            }
+            phoneInput.value = phoneNumber;
+        });
+
+        // Before form submission, store full international number without formatting
+        document.querySelector("form").addEventListener("submit", function(event) {
+            var fullPhoneNumber = iti.getNumber(); // Get full international number
+            if (!fullPhoneNumber) {
+                event.preventDefault(); // Prevent form submission if phone number is invalid
+                alert("Please enter a valid phone number.");
+                return;
+            }
+            // Update the hidden input value to the full international number
+            hiddenInput.value = fullPhoneNumber;
+            console.log("Hidden input value:", hiddenInput.value); // Debugging: Log the value
+        });
+    });
+</script>
+
 {% endblock %}

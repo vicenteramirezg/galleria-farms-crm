@@ -2,23 +2,21 @@
 
 {% block title %}Dashboard - Floral CRM{% endblock %}
 
+{% load humanize %}  <!-- Load humanize for intcomma formatting -->
+
 {% block content %}
 <!-- Header -->
 <div class="container py-5">
     <h1 class="text-center display-4 font-weight-bold">Welcome, {{ request.user.get_full_name }}!</h1>
     <h2 class="text-center mb-4">Your Customers</h2>
 
-    <!-- Add Customer Button -->
-    <div class="text-center mb-4">
-        <a href="{% url 'crm:add_customer' %}" class="btn btn-primary btn-lg">Add Customer</a>
-    </div>
-
     <!-- Customer List -->
     {% for customer in customers %}
         <div class="card mb-4 shadow-sm">
             <div class="card-body">
                 <h3 class="card-title d-flex justify-content-between">
-                    <span><strong>{{ customer.name }}</strong> - ${{ customer.estimated_yearly_sales }}</span>
+                    <span><strong>{{ customer.name }}</strong> - ${{ customer.estimated_yearly_sales|floatformat:0|intcomma }}</span>  
+                    <!-- ✅ Removes decimals & formats properly -->
                     <a href="{% url 'crm:customer_edit' customer.id %}" class="btn btn-sm btn-outline-primary">Edit Customer</a>
                 </h3>
                 <ul class="list-unstyled">

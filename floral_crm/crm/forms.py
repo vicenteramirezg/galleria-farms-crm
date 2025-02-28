@@ -9,9 +9,13 @@ class CustomerForm(forms.ModelForm):
         fields = ['name', 'estimated_yearly_sales']
 
 class ContactForm(forms.ModelForm):
+    birthday = forms.DateField(
+        required=False, widget=forms.DateInput(attrs={"type": "date", "class": "form-control"})
+    )
+
     class Meta:
         model = Contact
-        fields = ['name', 'phone', 'email', 'relationship_score', 'customer']
+        fields = ['name', 'phone', 'email', 'customer', 'relationship_score', 'birthday']
 
 class SignupForm(UserCreationForm):
     first_name = forms.CharField(max_length=30, required=True, help_text='Required.')

@@ -32,10 +32,21 @@ class Customer(models.Model):
 
 class Contact(models.Model):
     name = models.CharField(max_length=255)
-    phone = models.CharField(max_length=15, blank=True)
+    phone = models.CharField(max_length=20, blank=True)
     email = models.EmailField(blank=True)
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='contacts')
-    relationship_score = models.IntegerField(default=0)  # Example: 0-100
+    relationship_score = models.IntegerField(default=0)
+    birthday = models.DateField(null=True, blank=True)
+
+    def whatsapp_format(self):
+        # Remove all non-numeric characters
+        cleaned_number = ''.join(filter(str.isdigit, self.phone))
+        
+        # Ensure the number starts with a country code (e.g., '1' for US/Canada)
+        if not cleaned_number.startswith('+'):
+            cleaned_number = f"+1{cleaned_number}"  # Adjust the country code as needed
+        
+        return cleaned_number
 
     def __str__(self):
         return self.name

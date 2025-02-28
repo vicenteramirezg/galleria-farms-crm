@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -28,12 +29,13 @@ LOGIN_REDIRECT_URL = '/crm/dashboard/'  # Redirect users here after logging in
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '10.1.60.107']
 
 
 # Application definition
 
 INSTALLED_APPS = [
+    'django.contrib.humanize',
     'crm',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -125,7 +127,7 @@ STATIC_URL = "/static/"
 
 # This is to serve static files during development
 STATICFILES_DIRS = [
-    BASE_DIR / "crm" / "templates" / "static",
+    BASE_DIR / "floral_crm" / "static",  # ✅ Use correct static folder
 ]
 
 STATIC_ROOT = BASE_DIR / "staticfiles"

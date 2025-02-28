@@ -2,22 +2,46 @@
 
 {% block title %}Add a New Customer - Floral CRM{% endblock %}
 
+{% load humanize %}  <!-- ✅ Ensure humanize is loaded -->
+
 {% block content %}
 <div class="container">
     <div class="form-container bg-light p-4 rounded shadow-sm">
         <h2 class="mb-4">Add a New Customer</h2>
+
+        {% if form.errors %}
+            <div class="alert alert-danger">
+                <ul>
+                    {% for field in form %}
+                        {% for error in field.errors %}
+                            <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                        {% endfor %}
+                    {% endfor %}
+                    {% for error in form.non_field_errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
         <form method="post">
             {% csrf_token %}
             
             <!-- Customer Form Fields -->
             <div class="mb-3">
                 <label for="id_name" class="form-label font-weight-bold">Customer Name:</label>
-                <input type="text" name="name" value="{{ form.name.value }}" class="form-control" id="id_name">
+                <input type="text" name="name" value="{{ form.name.value|default_if_none:'' }}" 
+                       class="form-control" id="id_name" required>
             </div>
 
+            <!-- Estimated Yearly Sales -->
             <div class="mb-3">
                 <label for="id_estimated_yearly_sales" class="form-label font-weight-bold">Estimated Yearly Sales:</label>
-                <input type="number" name="estimated_yearly_sales" value="{{ form.estimated_yearly_sales.value }}" class="form-control" id="id_estimated_yearly_sales" step="0.01">
+                <input type="text" name="estimated_yearly_sales" 
+                       id="id_estimated_yearly_sales"
+                       class="form-control"
+                       value="{{ form.estimated_yearly_sales.value|default_if_none:''|floatformat:0|intcomma }}" 
+                       required>
             </div>
 
             <!-- Submit Button -->
@@ -28,4 +52,26 @@
         </form>
     </div>
 </div>
+
+<!-- JavaScript to Format Sales Number While Typing -->
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var salesInput = document.getElementById("id_estimated_yearly_sales");
+
+        function formatNumber(value) {
+            return value.replace(/\D/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+
+        salesInput.addEventListener("input", function(e) {
+            var rawValue = this.value.replace(/,/g, "");  // Remove existing commas
+            var formattedValue = formatNumber(rawValue);  // Apply formatting
+            this.value = formattedValue;
+        });
+
+        document.querySelector("form").addEventListener("submit", function() {
+            salesInput.value = salesInput.value.replace(/,/g, "");  // Remove commas before submitting
+        });
+    });
+</script>
+
 {% endblock %}

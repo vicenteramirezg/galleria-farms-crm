@@ -11,36 +11,47 @@
         <a href="{% url 'crm:add_contact' %}" class="btn btn-primary btn-lg">Add Contact</a>
     </div>
 
-    <!-- Contact List -->
+    <!-- Group Contacts by Customer -->
     {% if contacts %}
-        <div class="row">
-            {% for contact in contacts %}
-                <div class="col-md-6 col-lg-4 mb-4">
-                    <div class="card shadow-sm h-100">
-                        <div class="card-body">
-                            <h3 class="card-title d-flex justify-content-between align-items-center">
-                                <span><strong>{{ contact.name }}</strong></span>
-                                <a href="{% url 'crm:edit_contact' contact.id %}" class="btn btn-sm btn-outline-primary">Edit</a>
-                            </h3>
-                            <ul class="list-unstyled">
-                                <li class="mb-2">
-                                    <strong>Email:</strong> {{ contact.email }}
-                                </li>
-                                <li class="mb-2">
-                                    <strong>Phone:</strong> {{ contact.phone }}
-                                </li>
-                                <li class="mb-2">
-                                    <strong>Customer:</strong> {{ contact.customer.name }}
-                                </li>
-                                <li class="mb-2">
-                                    <span class="badge bg-info">Score: {{ contact.relationship_score }}</span>
-                                </li>
-                            </ul>
+        {% regroup contacts by customer as grouped_contacts %}
+        {% for customer in grouped_contacts %}
+            <div class="mb-5">
+                <h2 class="mb-4">{{ customer.grouper.name }}</h2>
+                <div class="row">
+                    {% for contact in customer.list %}
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card shadow-sm h-100">
+                                <div class="card-body">
+                                    <h3 class="card-title d-flex justify-content-between align-items-center">
+                                        <span><strong>{{ contact.name }}</strong></span>
+                                        <a href="{% url 'crm:contact_edit' contact.id %}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                    </h3>
+                                    <ul class="list-unstyled">
+                                        <li class="mb-2">
+                                            <strong>Email:</strong> {{ contact.email }}
+                                        </li>
+                                        <li class="mb-2">
+                                            <strong>Phone:</strong> {{ contact.phone }}
+                                        </li>
+                                        <li class="mb-2">
+                                            <strong>Birthday:</strong> {{ contact.birthday|default:"Not provided" }}
+                                        </li>
+                                        <li class="mb-2">
+                                            <span class="badge bg-info">Score: {{ contact.relationship_score }}</span>
+                                        </li>
+                                        <li class="mb-2">
+                                            <a href="https://wa.me/{{ contact.whatsapp_format }}" class="btn btn-success btn-sm" target="_blank">
+                                                <i class="fab fa-whatsapp"></i> Chat on WhatsApp
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
                         </div>
-                    </div>
+                    {% endfor %}
                 </div>
-            {% endfor %}
-        </div>
+            </div>
+        {% endfor %}
     {% else %}
         <p class="text-center">No contacts found.</p>
     {% endif %}

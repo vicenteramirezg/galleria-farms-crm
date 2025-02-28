@@ -143,10 +143,10 @@ def add_contact(request):
         form = ContactForm(request.POST)
         if form.is_valid():
             contact = form.save(commit=False)
-            contact.customer.salesperson = request.user.salesperson  # Assign salesperson
+            # No additional processing needed; the phone number is already in the correct format
             contact.save()
-            return redirect(reverse('crm:contact_list'))
+            return redirect("crm:contact_list")
     else:
         form = ContactForm()
     
-    return render(request, 'crm/add_contact.html', {'form': form})
+    return render(request, "crm/add_contact.html", {"form": form})

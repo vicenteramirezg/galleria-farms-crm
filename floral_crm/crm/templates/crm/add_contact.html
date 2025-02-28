@@ -1,16 +1,157 @@
-<!-- floral_crm/crm/templates/crm/add_contact.html -->
 {% extends "crm/base.html" %}
 
-{% block title %}Add Contact{% endblock %}
+{% block title %}Add a New Contact - Floral CRM{% endblock %}
 
 {% block content %}
-<div class="container py-5">
-    <h1 class="text-center display-4 font-weight-bold mb-4">Add Contact</h1>
+<div class="container">
+    <div class="form-container bg-light p-4 rounded shadow-sm">
+        <h2 class="mb-4">Add a New Contact</h2>
 
-    <form method="POST">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit" class="btn btn-primary">Save Contact</button>
-    </form>
+        {% if form.errors %}
+            <div class="alert alert-danger">
+                <ul>
+                    {% for field in form %}
+                        {% for error in field.errors %}
+                            <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                        {% endfor %}
+                    {% endfor %}
+                    {% for error in form.non_field_errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            
+            <!-- Contact Name -->
+            <div class="mb-3">
+                <label for="id_name" class="form-label font-weight-bold">Full Name:</label>
+                <input type="text" name="name" value="{{ form.name.value|default_if_none:'' }}" 
+                       class="form-control" id="id_name" required>
+            </div>
+
+            <!-- Phone Number with Country Code -->
+            <div class="mb-3">
+                <label for="id_phone" class="form-label font-weight-bold">Phone Number:</label>
+                <input type="tel" name="phone_display" class="form-control" id="id_phone" required>
+                <!-- Hidden input to store the full international number -->
+                <input type="hidden" name="phone" id="id_phone_full">
+            </div>
+
+            <div class="mb-3">
+                <label for="id_email" class="form-label font-weight-bold">Email:</label>
+                <input type="email" name="email" value="{{ form.email.value|default_if_none:'' }}" 
+                       class="form-control" id="id_email">
+            </div>
+
+            <div class="mb-3">
+                <label for="id_customer" class="form-label font-weight-bold">Associated Customer:</label>
+                {{ form.customer }}
+            </div>
+
+            <!-- Birthday Field -->
+            <div class="mb-3">
+                <label for="id_birthday" class="form-label font-weight-bold">Birthday:</label>
+                <input type="date" name="birthday" value="{{ form.birthday.value|default_if_none:'' }}" 
+                       class="form-control" id="id_birthday">
+            </div>
+
+            <!-- Star Rating for Relationship Score (Aligned to Left) -->
+            <div class="mb-3">
+                <label class="form-label font-weight-bold d-block">Relationship Score:</label>
+                <div class="star-rating">
+                    <input type="radio" id="star5" name="relationship_score" value="5" {% if form.relationship_score.value == 5 %}checked{% endif %}>
+                    <label for="star5" title="5 stars">&#9733;</label>
+
+                    <input type="radio" id="star4" name="relationship_score" value="4" {% if form.relationship_score.value == 4 %}checked{% endif %}>
+                    <label for="star4" title="4 stars">&#9733;</label>
+
+                    <input type="radio" id="star3" name="relationship_score" value="3" {% if form.relationship_score.value == 3 %}checked{% endif %}>
+                    <label for="star3" title="3 stars">&#9733;</label>
+
+                    <input type="radio" id="star2" name="relationship_score" value="2" {% if form.relationship_score.value == 2 %}checked{% endif %}>
+                    <label for="star2" title="2 stars">&#9733;</label>
+
+                    <input type="radio" id="star1" name="relationship_score" value="1" {% if form.relationship_score.value == 1 %}checked{% endif %}>
+                    <label for="star1" title="1 star">&#9733;</label>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="d-flex justify-content-between">
+                <button type="submit" class="btn btn-primary">Add Contact</button>
+                <a href="{% url 'crm:dashboard' %}" class="btn btn-secondary">Back to Dashboard</a>
+            </div>
+        </form>
+    </div>
 </div>
+
+<!-- Load intl-tel-input for phone formatting -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/css/intlTelInput.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/intlTelInput.min.js"></script>
+
+<!-- Custom CSS for star rating & left alignment -->
+<style>
+    .star-rating {
+        direction: rtl;
+        font-size: 2rem;
+        display: flex;
+        justify-content: flex-start; /* Align stars to the left */
+        gap: 5px;
+    }
+    .star-rating input {
+        display: none;
+    }
+    .star-rating label {
+        color: #ccc;
+        cursor: pointer;
+    }
+    .star-rating input:checked ~ label {
+        color: #ffcc00;
+    }
+    .star-rating label:hover,
+    .star-rating label:hover ~ label {
+        color: #ffcc00;
+    }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var input = document.querySelector("#id_phone");
+        var hiddenInput = document.querySelector("#id_phone_full");
+        var iti = window.intlTelInput(input, {
+            initialCountry: "us",
+            separateDialCode: true,
+            preferredCountries: ["us", "co", "ca"],
+            utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/utils.js"
+        });
+
+        // Format phone number as user types (frontend only)
+        input.addEventListener("input", function() {
+            let phoneNumber = input.value.replace(/\D/g, '');
+            if (phoneNumber.length > 6) {
+                phoneNumber = phoneNumber.replace(/(\d{3})(\d{3})(\d{0,4})/, "$1-$2-$3");
+            } else if (phoneNumber.length > 3) {
+                phoneNumber = phoneNumber.replace(/(\d{3})(\d{0,3})/, "$1-$2");
+            }
+            input.value = phoneNumber;
+        });
+
+        // Before form submission, store full international number without formatting
+        document.querySelector("form").addEventListener("submit", function(event) {
+            var fullPhoneNumber = iti.getNumber(); // Get full international number
+            if (!fullPhoneNumber) {
+                event.preventDefault(); // Prevent form submission if phone number is invalid
+                alert("Please enter a valid phone number.");
+                return;
+            }
+            // Set the hidden input value to the full international number
+            hiddenInput.value = fullPhoneNumber;
+            console.log("Hidden input value:", hiddenInput.value); // Debugging: Log the value
+        });
+    });
+</script>
+
 {% endblock %}
