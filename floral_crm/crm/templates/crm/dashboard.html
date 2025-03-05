@@ -6,23 +6,23 @@
 
 {% block content %}
 <div class="container py-5">
-    <h1 class="text-center display-4 font-weight-bold">Dashboard</h1>
-    
+    <h1 class="text-center display-4 font-weight-bold mb-4">Dashboard</h1>
+
     <!-- Key Metrics Row -->
-    <div class="row text-center mb-4">
-        <div class="col-md-4">
+    <div class="row text-center mb-5">
+        <div class="col-md-4 mb-3">
             <div class="p-4 bg-light rounded shadow-sm">
                 <h4>Total Estimated Sales</h4>
                 <p class="display-6 text-success">${{ total_sales|intcomma }}</p>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-4 mb-3">
             <div class="p-4 bg-light rounded shadow-sm">
                 <h4>Total Contacts</h4>
                 <p class="display-6 text-primary">{{ total_contacts }}</p>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-4 mb-3">
             <div class="p-4 bg-light rounded shadow-sm">
                 <h4>Avg. Relationship Score</h4>
                 <p class="display-6 text-warning">{{ avg_relationship_score|floatformat:2 }}</p>
@@ -32,17 +32,18 @@
 
     <!-- Top Customers (Chart) -->
     <div class="row mb-5">
-        <div class="col-md-12">
+        <div class="col-12">
             <h2 class="text-center mb-3">Top 5 Customers by Sales</h2>
-            <canvas id="topCustomersChart" width="400" height="100"></canvas>
+            <div class="chart-container">
+                <canvas id="topCustomersChart"></canvas>
+            </div>
         </div>
     </div>
 
     <!-- Upcoming Birthdays Table -->
     <h2 class="mb-3">Upcoming Birthdays 🎂</h2>
-
     {% if upcoming_birthdays %}
-        <div class="table-responsive">
+        <div class="table-responsive mb-5">
             <table class="table table-striped shadow-sm">
                 <thead class="thead-dark">
                     <tr>
@@ -59,7 +60,7 @@
                     <tr>
                         <td>{{ contact.name }}</td>
                         <td>{{ contact.customer.name }}</td>
-                        <td>{{ contact.birthday|date:"F j" }}</td>  <!-- Formats as 'March 15' -->
+                        <td>{{ contact.birthday|date:"F j" }}</td>
                         <td>{{ contact.relationship_score }}</td>
                         <td>
                             <a href="tel:{{ contact.phone }}" class="text-decoration-none">
@@ -79,12 +80,12 @@
             </table>
         </div>
     {% else %}
-        <p>No upcoming birthdays in the next 30 days.</p>
+        <p class="mb-5">No upcoming birthdays in the next 30 days.</p>
     {% endif %}
 
     <!-- Customers Summary Table -->
     <h2 class="mb-3">Customer Overview</h2>
-    <div class="table-responsive">
+    <div class="table-responsive mb-5">
         <table class="table table-striped shadow-sm">
             <thead class="thead-dark">
                 <tr>
@@ -135,13 +136,46 @@
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
                 scales: {
                     y: {
                         beginAtZero: true
                     }
+                },
+                plugins: {
+                    legend: {
+                        display: false  // Hide legend for a cleaner look
+                    }
                 }
             }
         });
+
+        // Resize chart dynamically
+        function resizeChart() {
+            var chartContainer = document.querySelector('.chart-container');
+            if (window.innerWidth > 992) {  // Large screens (desktops)
+                chartContainer.style.height = "400px";
+            } else {  // Small screens (mobile/tablets)
+                chartContainer.style.height = "250px";
+            }
+            chart.resize();
+        }
+
+        window.addEventListener("resize", resizeChart);
+        resizeChart();  // Call once on load
     });
 </script>
+
+<!-- Custom CSS for spacing and chart scaling -->
+<style>
+    .chart-container {
+        position: relative;
+        width: 100%;
+        max-width: 800px;  /* Wider for desktop */
+        min-width: 300px;  /* Smallest width for mobile */
+        height: auto;
+        margin: auto;
+    }
+</style>
+
 {% endblock %}
