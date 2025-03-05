@@ -38,6 +38,37 @@
         </div>
     </div>
 
+    <!-- Upcoming Birthdays Table -->
+    <h2 class="mt-5 mb-3">Upcoming Birthdays (Next 30 Days)</h2>
+    <div class="table-responsive">
+        <table class="table table-striped shadow-sm">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Contact Name</th>
+                    <th>Customer</th>
+                    <th>Birthday</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for contact in upcoming_birthdays %}
+                <tr>
+                    <td>{{ contact.name }}</td>
+                    <td>{{ contact.customer.name }}</td>
+                    <td>{{ contact.birthday|date:"F d" }}</td>
+                    <td>{{ contact.email }}</td>
+                    <td>{{ contact.phone }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center">No upcoming birthdays in the next 30 days.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
     <!-- Customers Summary Table -->
     <h2 class="mb-3">Customer Overview</h2>
     <div class="table-responsive">

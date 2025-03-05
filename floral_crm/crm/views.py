@@ -18,6 +18,7 @@ from django.http import HttpResponseNotAllowed
 from django.utils.decorators import method_decorator
 from django.contrib import messages
 import logging
+from datetime import timedelta, date
 
 logger = logging.getLogger(__name__)  # Setup logging for debugging
 
@@ -57,13 +58,21 @@ class SalespersonAccessMixin:
 
 @login_required
 def dashboard(request):
-    """ Generates summary metrics for Executives (all customers) & Salespersons (own customers). """
+    """ Generates summary metrics for Executives (all customers) & Salespersons (own customers) with upcoming birthdays. """
 
-    if request.user.profile.role == Role.EXECUTIVE:  # ✅ Executives see all customers
+    today = date.today()
+    next_30_days = today + timedelta(days=30)
+
+    if request.user.profile.role == Role.EXECUTIVE:  # ✅ Executives see all customers & contacts
         customers = Customer.objects.all().prefetch_related("contacts")
-    else:  # ✅ Salespersons see only their own customers
+        upcoming_birthdays = Contact.objects.filter(birthday__range=[today, next_30_days])
+    else:  # ✅ Salespersons see only their own customers & contacts
         customers = Customer.objects.filter(salesperson=request.user.salesperson) \
                                     .prefetch_related("contacts")
+        upcoming_birthdays = Contact.objects.filter(
+            customer__salesperson=request.user.salesperson,
+            birthday__range=[today, next_30_days]
+        )
 
     # Calculate key statistics
     total_sales = customers.aggregate(Sum("estimated_yearly_sales"))["estimated_yearly_sales__sum"] or 0
@@ -92,7 +101,8 @@ def dashboard(request):
         "total_sales": total_sales,
         "total_contacts": total_contacts,
         "avg_relationship_score": round(avg_relationship_score, 2),
-        "top_customers": top_customers
+        "top_customers": top_customers,
+        "upcoming_birthdays": upcoming_birthdays,  # ✅ Add upcoming birthdays
     })
 
 class CustomerUpdateView(LoginRequiredMixin, SalespersonAccessMixin, UpdateView):
