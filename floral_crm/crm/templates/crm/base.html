@@ -34,6 +34,16 @@
                 <img src="{% static 'img/logo_white.png' %}" alt="Galleria Farms Logo" height="40" class="me-2">
             </a>
 
+            <!-- Greeting & Role Badge -->
+            {% if user.is_authenticated %}
+                <div class="d-flex align-items-center text-white me-3">
+                    <span class="fw">Hello, {{ user.get_full_name }}</span>
+                    {% if user.profile.role %}
+                        <span class="badge bg-info ms-2">{{ user.profile.role }}</span>
+                    {% endif %}
+                </div>
+            {% endif %}
+
             <!-- Hamburger Button for Mobile -->
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
                 aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">

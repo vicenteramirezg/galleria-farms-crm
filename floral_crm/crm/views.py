@@ -220,9 +220,21 @@ class CustomerCreateView(LoginRequiredMixin, CreateView):
     template_name = 'crm/add_customer.html'
     success_url = reverse_lazy('crm:customer_list')
 
+    def get_form_kwargs(self):
+        """ Pass the logged-in user to the form for role-based logic """
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user  # Pass user to form
+        return kwargs
+
     def form_valid(self, form):
-        """ Ensure salesperson is set before saving """
-        form.instance.salesperson = self.request.user.salesperson
+        """ Ensure correct salesperson is assigned based on user role """
+
+        if self.request.user.profile.role == "Executive":
+            # Allow Executives to assign a salesperson
+            form.instance.salesperson = form.cleaned_data.get("salesperson")
+        else:
+            # Salespeople can only assign themselves
+            form.instance.salesperson = self.request.user.salesperson
 
         # 🔹 Log cleaned form data
         logger.info(f"🔹 Form Data Before Saving: {form.cleaned_data}")
@@ -231,26 +243,36 @@ class CustomerCreateView(LoginRequiredMixin, CreateView):
 
         # 🔥 Fetch newly created customer from the database
         new_customer = get_object_or_404(Customer, id=form.instance.id)
-        logger.info(f"✅ New Customer Created: {new_customer.name}, Sales: {new_customer.estimated_yearly_sales}")
+        logger.info(f"✅ New Customer Created: {new_customer.name}, Sales: {new_customer.estimated_yearly_sales}, Salesperson: {new_customer.salesperson}")
 
         return response
 
 @login_required
 def add_customer(request):
+    """ Handles customer creation with role-based salesperson assignment """
+    
     if request.method == "POST":
-        form = CustomerForm(request.POST)
+        form = CustomerForm(request.POST, user=request.user)
+        
         if form.is_valid():
             customer = form.save(commit=False)
-            customer.salesperson = request.user.salesperson  # Assign salesperson
+
+            if request.user.profile.role == "Executive":
+                # Executives can select a salesperson
+                customer.salesperson = form.cleaned_data.get("salesperson")
+            else:
+                # Salespeople automatically assigned
+                customer.salesperson = request.user.salesperson
+
             customer.save()
             return redirect("crm:customer_list")
         else:
-            print("Form errors:", form.errors)  # ✅ Debugging
-    else:
-        form = CustomerForm()
-    
-    return render(request, "crm/add_customer.html", {"form": form})
+            logger.error(f"❌ Customer Form Errors: {form.errors}")  # Debugging
 
+    else:
+        form = CustomerForm(user=request.user)  # Pass user to form
+
+    return render(request, "crm/add_customer.html", {"form": form})
 
 @login_required
 def customer_list(request):

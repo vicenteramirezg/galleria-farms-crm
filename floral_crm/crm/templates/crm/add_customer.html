@@ -40,6 +40,14 @@
                 {{ form.department }}
             </div>
 
+            <!-- Salesperson Field (Visible Only for Executives) -->
+            {% if user.profile.role == "Executive" %}
+            <div class="mb-3">
+                <label for="id_salesperson" class="form-label font-weight-bold">Assign Salesperson:</label>
+                {{ form.salesperson }}
+            </div>
+            {% endif %}
+
             <!-- Estimated Yearly Sales -->
             <div class="mb-3">
                 <label for="id_estimated_yearly_sales_display" class="form-label font-weight-bold">
