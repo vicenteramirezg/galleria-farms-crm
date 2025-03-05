@@ -1,5 +1,5 @@
 from django import forms
-from .models import Customer, Contact, Salesperson
+from .models import Customer, Contact, Salesperson, Role
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
 
@@ -54,24 +54,22 @@ class CustomerForm(forms.ModelForm):
 class ContactForm(forms.ModelForm):
     class Meta:
         model = Contact
-        fields = ['name', 'phone', 'email', 'relationship_score', 'birthday']
+        fields = ['name', 'phone', 'email', 'customer', 'relationship_score', 'birthday']
         widgets = {
             'birthday': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
         }
 
     def __init__(self, *args, **kwargs):
-        salesperson = kwargs.pop('salesperson', None)
+        user = kwargs.pop('user', None)  # Get user from kwargs
         super().__init__(*args, **kwargs)
-        if salesperson:
-            self.fields['customer'].queryset = Customer.objects.filter(salesperson=salesperson)
 
-    def clean_phone(self):
-        phone = self.cleaned_data.get('phone')
-        if phone:
-            phone = phone.strip().replace(" ", "").replace("-", "")  # Ensure no spaces or dashes
-            if not phone.startswith('+'):
-                raise forms.ValidationError("Phone number must be in international format (e.g., +17868755569).")
-        return phone
+        if user:
+            if user.profile.role == Role.EXECUTIVE:
+                # Executives can see all customers
+                self.fields['customer'].queryset = Customer.objects.all()
+            else:
+                # Salespersons can only see their own customers
+                self.fields['customer'].queryset = Customer.objects.filter(salesperson=user.salesperson)
 
 class SignupForm(UserCreationForm):
     first_name = forms.CharField(max_length=30, required=True, help_text='Required.')

@@ -34,40 +34,53 @@
     <div class="row mb-5">
         <div class="col-md-12">
             <h2 class="text-center mb-3">Top 5 Customers by Sales</h2>
-            <canvas id="topCustomersChart" width="400" height="200"></canvas>
+            <canvas id="topCustomersChart" width="400" height="100"></canvas>
         </div>
     </div>
 
     <!-- Upcoming Birthdays Table -->
-    <h2 class="mt-5 mb-3">Upcoming Birthdays (Next 30 Days)</h2>
-    <div class="table-responsive">
-        <table class="table table-striped shadow-sm">
-            <thead class="thead-dark">
-                <tr>
-                    <th>Contact Name</th>
-                    <th>Customer</th>
-                    <th>Birthday</th>
-                    <th>Email</th>
-                    <th>Phone</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for contact in upcoming_birthdays %}
-                <tr>
-                    <td>{{ contact.name }}</td>
-                    <td>{{ contact.customer.name }}</td>
-                    <td>{{ contact.birthday|date:"F d" }}</td>
-                    <td>{{ contact.email }}</td>
-                    <td>{{ contact.phone }}</td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="5" class="text-center">No upcoming birthdays in the next 30 days.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+    <h2 class="mb-3">Upcoming Birthdays 🎂</h2>
+
+    {% if upcoming_birthdays %}
+        <div class="table-responsive">
+            <table class="table table-striped shadow-sm">
+                <thead class="thead-dark">
+                    <tr>
+                        <th>Name</th>
+                        <th>Customer</th>
+                        <th>Birthday</th>
+                        <th>Relationship Score</th>
+                        <th>Phone</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for contact in upcoming_birthdays %}
+                    <tr>
+                        <td>{{ contact.name }}</td>
+                        <td>{{ contact.customer.name }}</td>
+                        <td>{{ contact.birthday|date:"F j" }}</td>  <!-- Formats as 'March 15' -->
+                        <td>{{ contact.relationship_score }}</td>
+                        <td>
+                            <a href="tel:{{ contact.phone }}" class="text-decoration-none">
+                                {{ contact.phone }}
+                                <i class="fas fa-phone text-success"></i>
+                            </a>
+                        </td>
+                        <td>
+                            <a href="https://wa.me/{{ contact.phone }}?text=Happy%20birthday,%20{{ contact.name }}!" 
+                            class="btn btn-success btn-sm" target="_blank">
+                                <i class="fab fa-whatsapp"></i> Send Wish
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p>No upcoming birthdays in the next 30 days.</p>
+    {% endif %}
 
     <!-- Customers Summary Table -->
     <h2 class="mb-3">Customer Overview</h2>

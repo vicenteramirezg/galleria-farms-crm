@@ -19,6 +19,7 @@ from django.utils.decorators import method_decorator
 from django.contrib import messages
 import logging
 from datetime import timedelta, date
+from django.db.models.functions import ExtractMonth, ExtractDay
 
 logger = logging.getLogger(__name__)  # Setup logging for debugging
 
@@ -56,23 +57,23 @@ class SalespersonAccessMixin:
             raise PermissionDenied("You do not have access to this customer.")
         return super().dispatch(request, *args, **kwargs)
 
+from datetime import date, timedelta
+from django.db.models import Sum, Avg, Count
+from django.db.models.functions import ExtractMonth, ExtractDay
+from django.db.models import Q
+
 @login_required
 def dashboard(request):
-    """ Generates summary metrics for Executives (all customers) & Salespersons (own customers) with upcoming birthdays. """
+    """ Generates summary metrics for the salesperson's or executive's customers. """
+    
+    user = request.user
+    salesperson = getattr(user, 'salesperson', None)
 
-    today = date.today()
-    next_30_days = today + timedelta(days=30)
-
-    if request.user.profile.role == Role.EXECUTIVE:  # ✅ Executives see all customers & contacts
-        customers = Customer.objects.all().prefetch_related("contacts")
-        upcoming_birthdays = Contact.objects.filter(birthday__range=[today, next_30_days])
-    else:  # ✅ Salespersons see only their own customers & contacts
-        customers = Customer.objects.filter(salesperson=request.user.salesperson) \
-                                    .prefetch_related("contacts")
-        upcoming_birthdays = Contact.objects.filter(
-            customer__salesperson=request.user.salesperson,
-            birthday__range=[today, next_30_days]
-        )
+    # Executives see all customers, Salespeople see their own customers
+    if user.profile.role == Role.EXECUTIVE:
+        customers = Customer.objects.prefetch_related("contacts")
+    else:
+        customers = Customer.objects.filter(salesperson=salesperson).prefetch_related("contacts")
 
     # Calculate key statistics
     total_sales = customers.aggregate(Sum("estimated_yearly_sales"))["estimated_yearly_sales__sum"] or 0
@@ -96,13 +97,32 @@ def dashboard(request):
             "avg_score": avg_score
         })
 
+    # ✅ Get contacts with a birthday within the next 30 days
+    today = date.today()
+    thirty_days_later = today + timedelta(days=30)
+
+    upcoming_birthdays = Contact.objects.filter(
+        customer__in=customers
+    ).annotate(
+        birth_month=ExtractMonth("birthday"),
+        birth_day=ExtractDay("birthday")
+    ).filter(
+        # Handle birthdays within the same month or upcoming months
+        Q(birth_month=today.month, birth_day__gte=today.day) |
+        Q(birth_month=thirty_days_later.month, birth_day__lte=thirty_days_later.day) |
+        Q(
+            birth_month__gt=today.month, 
+            birth_month__lt=thirty_days_later.month
+        )
+    ).order_by("birth_month", "birth_day")
+
     return render(request, "crm/dashboard.html", {
         "customers": customer_data,
         "total_sales": total_sales,
         "total_contacts": total_contacts,
         "avg_relationship_score": round(avg_relationship_score, 2),
         "top_customers": top_customers,
-        "upcoming_birthdays": upcoming_birthdays,  # ✅ Add upcoming birthdays
+        "upcoming_birthdays": upcoming_birthdays
     })
 
 class CustomerUpdateView(LoginRequiredMixin, SalespersonAccessMixin, UpdateView):
@@ -326,14 +346,14 @@ class ContactListView(LoginRequiredMixin, ListView):
 @login_required
 def add_contact(request):
     if request.method == "POST":
-        form = ContactForm(request.POST)
+        form = ContactForm(request.POST, user=request.user)  # ✅ Pass user
         if form.is_valid():
             contact = form.save(commit=False)
             contact.phone = form.cleaned_data['phone']  # Ensure phone is stored
             contact.save()
             return redirect("crm:contact_list")
     else:
-        form = ContactForm()
+        form = ContactForm(user=request.user)  # ✅ Pass user
     
     return render(request, "crm/add_contact.html", {"form": form})
 
