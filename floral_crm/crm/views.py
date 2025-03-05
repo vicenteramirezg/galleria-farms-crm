@@ -161,16 +161,56 @@ class ContactUpdateView(LoginRequiredMixin, UpdateView):
 
 @login_required
 def export_contacts(request):
+    """ Exports contacts into a CSV file with additional fields: Birthday & Salesperson """
+
+    # Get contacts associated with the logged-in salesperson
     contacts = Contact.objects.filter(customer__salesperson=request.user.salesperson)
 
+    # Create the CSV response
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = 'attachment; filename="contacts.csv"'
 
+    # Set up the CSV writer
     writer = csv.writer(response)
-    writer.writerow(['Name', 'Phone', 'Email', 'Customer', 'Relationship Score'])
+    writer.writerow(['Name', 'Phone', 'Email', 'Customer', 'Relationship Score', 'Birthday', 'Salesperson'])
 
+    # Write contact data to CSV
     for contact in contacts:
-        writer.writerow([contact.name, contact.phone, contact.email, contact.customer.name, contact.relationship_score])
+        writer.writerow([
+            contact.name,
+            contact.phone,
+            contact.email,
+            contact.customer.name if contact.customer else "N/A",  # Handle missing customer
+            contact.relationship_score,
+            contact.birthday.strftime('%Y-%m-%d') if contact.birthday else "Not provided",  # Format birthday
+            contact.customer.salesperson.user.get_full_name() if contact.customer and contact.customer.salesperson else "N/A"  # Fetch salesperson's name
+        ])
+
+    return response
+
+@login_required
+def export_customers(request):
+    """ Exports customers into a CSV file with key details """
+
+    # Get customers associated with the logged-in salesperson
+    customers = Customer.objects.filter(salesperson=request.user.salesperson)
+
+    # Create the CSV response
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="customers.csv"'
+
+    # Set up the CSV writer
+    writer = csv.writer(response)
+    writer.writerow(['Name', 'Department', 'Estimated Yearly Sales', 'Salesperson'])
+
+    # Write customer data to CSV
+    for customer in customers:
+        writer.writerow([
+            customer.name,
+            customer.get_department_display(),  # Use display name for department
+            f"${customer.estimated_yearly_sales:,.0f}",  # Format sales with commas and no decimals
+            customer.salesperson.user.get_full_name() if customer.salesperson else "N/A"  # Fetch salesperson's name
+        ])
 
     return response
 
