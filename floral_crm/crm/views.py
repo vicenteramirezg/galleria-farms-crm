@@ -57,18 +57,18 @@ class SalespersonAccessMixin:
 
 @login_required
 def dashboard(request):
-    """ Generates summary metrics for the salesperson's customers. """
+    """ Generates summary metrics for Executives (all customers) & Salespersons (own customers). """
 
-    salesperson = request.user.salesperson
-    
-    # Fetch all customers under the logged-in salesperson
-    customers = Customer.objects.filter(salesperson=salesperson) \
-                                .prefetch_related("contacts")
+    if request.user.profile.role == Role.EXECUTIVE:  # ✅ Executives see all customers
+        customers = Customer.objects.all().prefetch_related("contacts")
+    else:  # ✅ Salespersons see only their own customers
+        customers = Customer.objects.filter(salesperson=request.user.salesperson) \
+                                    .prefetch_related("contacts")
 
     # Calculate key statistics
     total_sales = customers.aggregate(Sum("estimated_yearly_sales"))["estimated_yearly_sales__sum"] or 0
-    total_contacts = Contact.objects.filter(customer__salesperson=salesperson).count()
-    avg_relationship_score = Contact.objects.filter(customer__salesperson=salesperson) \
+    total_contacts = Contact.objects.filter(customer__in=customers).count()
+    avg_relationship_score = Contact.objects.filter(customer__in=customers) \
                                             .aggregate(Avg("relationship_score"))["relationship_score__avg"] or 0
 
     # Prepare data for top customers
@@ -80,6 +80,7 @@ def dashboard(request):
         num_contacts = customer.contacts.count()
         avg_score = customer.contacts.aggregate(Avg("relationship_score"))["relationship_score__avg"] or 0
         customer_data.append({
+            "id": customer.id,
             "name": customer.name,
             "sales": customer.estimated_yearly_sales,
             "num_contacts": num_contacts,

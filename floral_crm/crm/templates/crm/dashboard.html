@@ -45,7 +45,7 @@
             <thead class="thead-dark">
                 <tr>
                     <th>Customer Name</th>
-                    <th>Estimated Sales</th>
+                    <th>Estimated Yearly Sales</th>
                     <th>Number of Contacts</th>
                     <th>Avg. Relationship Score</th>
                 </tr>
@@ -53,7 +53,11 @@
             <tbody>
                 {% for customer in customers %}
                 <tr>
-                    <td>{{ customer.name }}</td>
+                    <td>
+                        <a href="{% url 'crm:customer_detail' customer.id %}" class="text-decoration-none fw-bold">
+                            {{ customer.name }}
+                        </a>
+                    </td>
                     <td>${{ customer.sales|intcomma }}</td>
                     <td>{{ customer.num_contacts }}</td>
                     <td>{{ customer.avg_score|floatformat:2 }}</td>
