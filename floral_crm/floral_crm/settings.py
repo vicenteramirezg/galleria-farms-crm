@@ -64,6 +64,9 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = "floral_crm.urls"
 
+CSRF_COOKIE_SECURE = True  # Ensures CSRF cookies are only sent over HTTPS
+SESSION_COOKIE_SECURE = True  # Ensures sessions are secure
+
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
@@ -123,6 +126,11 @@ USE_I18N = True
 
 USE_TZ = True
 
+CSRF_TRUSTED_ORIGINS = [
+    "https://galleria-farms-crm.up.railway.app",
+    "http://127.0.0.1",
+    "http://localhost",
+]
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
