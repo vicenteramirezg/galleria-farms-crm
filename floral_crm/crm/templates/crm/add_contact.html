@@ -3,9 +3,9 @@
 {% block title %}Add a New Contact - Floral CRM{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="form-container bg-light p-4 rounded shadow-sm">
-        <h2 class="mb-4">Add a New Contact</h2>
+<div class="container py-5">
+    <div class="form-container bg-light p-4 rounded shadow-sm mx-auto" style="max-width: 600px;">
+        <h2 class="mb-4 text-center">Add a New Contact</h2>
 
         {% if form.errors %}
             <div class="alert alert-danger">
@@ -24,43 +24,57 @@
 
         <form method="post">
             {% csrf_token %}
-            
-            <!-- Contact Name -->
-            <div class="mb-3">
+
+            <!-- Name -->
+            <div class="mb-3 text-center">
                 <label for="id_name" class="form-label font-weight-bold">Full Name:</label>
                 {{ form.name }}
             </div>
 
-            <!-- Phone Number with Country Code -->
-            <div class="mb-3">
-                <label for="id_phone" class="form-label font-weight-bold">Phone Number:</label>
-                <input type="tel" id="id_phone" class="form-control">
-                <!-- Hidden input to store the full international number -->
-                <input type="hidden" id="id_phone_full" name="phone">
-            </div>
-
-            <!-- Email -->
-            <div class="mb-3">
-                <label for="id_email" class="form-label font-weight-bold">Email:</label>
-                {{ form.email }}
-            </div>
-
-            <!-- Associated Customer (Dropdown) -->
-            <div class="mb-3">
+            <!-- Associated Customer -->
+            <div class="mb-3 text-center">
                 <label for="id_customer" class="form-label font-weight-bold">Associated Customer:</label>
                 {{ form.customer }}
             </div>
 
-            <!-- Birthday Field (Date Picker) -->
-            <div class="mb-3">
-                <label for="id_birthday" class="form-label font-weight-bold">Birthday:</label>
-                {{ form.birthday }}
+            <!-- Phone Number -->
+            <div class="mb-3 text-center">
+                <label for="id_phone" class="form-label font-weight-bold">Phone Number:</label>
+                <input type="tel" id="id_phone" class="form-control text-center">
+                <input type="hidden" id="id_phone_full" name="phone">
             </div>
 
-            <!-- Star Rating for Relationship Score -->
-            <div class="mb-3">
-                <label class="form-label font-weight-bold d-block">Relationship Score:</label>
-                <div class="star-rating">
+            <!-- Email -->
+            <div class="mb-3 text-center">
+                <label for="id_email" class="form-label font-weight-bold">Email:</label>
+                {{ form.email }}
+            </div>
+
+            <!-- Address (Smaller Input) -->
+            <div class="mb-3 text-center">
+                <label for="id_address" class="form-label font-weight-bold">Address:</label>
+                {{ form.address }}
+            </div>
+
+            <!-- Birthday Selection (Two Fields in One Row) -->
+            <div class="mb-3 text-center">
+                <label class="form-label font-weight-bold">Birthday:</label>
+                <div class="d-flex justify-content-center gap-3">
+                    <div>
+                        <label for="id_birthday_month">Month:</label>
+                        {{ form.birthday_month }}
+                    </div>
+                    <div>
+                        <label for="id_birthday_day">Day:</label>
+                        {{ form.birthday_day }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Relationship Score -->
+            <div class="mb-4 text-center">
+                <label class="form-label font-weight-bold">Relationship Score:</label>
+                <div class="star-rating d-flex justify-content-center">
                     <input type="radio" id="star5" name="relationship_score" value="5" {% if form.relationship_score.value == 5 %}checked{% endif %}>
                     <label for="star5" title="5 stars">&#9733;</label>
 
@@ -79,9 +93,12 @@
             </div>
 
             <!-- Submit Button -->
-            <div class="d-flex justify-content-between">
-                <button type="submit" class="btn btn-primary">Add Contact</button>
-                <a href="{% url 'crm:dashboard' %}" class="btn btn-secondary">Back to Dashboard</a>
+            <div class="text-center mt-4">
+                <button type="submit" class="btn btn-primary btn-lg">Add Contact</button>
+            </div>
+            <!-- Back to Dashboard Button -->
+            <div class="text-center mt-4">
+                <a href="{% url 'crm:dashboard' %}" class="btn btn-secondary btn-lg">Back to Dashboard</a>
             </div>
         </form>
     </div>
@@ -91,13 +108,18 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/css/intlTelInput.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/intlTelInput.min.js"></script>
 
-<!-- Custom CSS for star rating -->
+<!-- Custom CSS -->
 <style>
+    .form-container {
+        max-width: 500px;
+        margin: auto;
+    }
+
     .star-rating {
         direction: rtl;
-        font-size: 2rem;
+        font-size: 1.5rem;
         display: flex;
-        justify-content: flex-start; /* Align stars to the left */
+        justify-content: center;
         gap: 5px;
     }
     .star-rating input {
@@ -113,6 +135,19 @@
     .star-rating label:hover,
     .star-rating label:hover ~ label {
         color: #ffcc00;
+    }
+
+    .d-flex.justify-content-center {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+    }
+
+    /* Smaller Address Field */
+    #id_address {
+        width: 100%;
+        max-width: 400px;
     }
 </style>
 
@@ -148,15 +183,13 @@
 
         // Before form submission, update hidden input again
         document.querySelector("form").addEventListener("submit", function(event) {
-            var fullPhoneNumber = iti.getNumber(); // Get full international number
-            if (!fullPhoneNumber || fullPhoneNumber.trim() === "") {
+            var fullPhoneNumber = iti.getNumber();
+            if (!fullPhoneNumber.trim()) {
                 event.preventDefault();
                 alert("Please enter a valid phone number.");
                 return;
             }
-
-            hiddenInput.value = fullPhoneNumber; // Store full number in hidden input
-            console.log("Submitting phone:", hiddenInput.value); // Debugging: Log the value
+            hiddenInput.value = fullPhoneNumber;
         });
     });
 </script>

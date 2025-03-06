@@ -52,22 +52,20 @@ class Customer(models.Model):
         return f"{self.name} - {self.get_department_display()}"
 
 class Contact(models.Model):
-    name = models.CharField(max_length=255)
-    phone = models.CharField(max_length=20, blank=True)
-    email = models.EmailField(blank=True)
-    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='contacts')
-    relationship_score = models.IntegerField(default=0)
-    birthday = models.DateField(null=True, blank=True)
+    MONTHS = [
+        (1, "January"), (2, "February"), (3, "March"), (4, "April"),
+        (5, "May"), (6, "June"), (7, "July"), (8, "August"),
+        (9, "September"), (10, "October"), (11, "November"), (12, "December")
+    ]
 
-    def whatsapp_format(self):
-        # Remove all non-numeric characters
-        cleaned_number = ''.join(filter(str.isdigit, self.phone))
-        
-        # Ensure the number starts with a country code (e.g., '1' for US/Canada)
-        if not cleaned_number.startswith('+'):
-            cleaned_number = f"+1{cleaned_number}"  # Adjust the country code as needed
-        
-        return cleaned_number
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name="contacts")
+    name = models.CharField(max_length=255)
+    phone = models.CharField(max_length=20, blank=True, null=True)
+    email = models.EmailField(blank=True, null=True)
+    address = models.TextField(blank=True, null=True)
+    birthday_month = models.IntegerField(choices=MONTHS, blank=True, null=True)
+    birthday_day = models.IntegerField(blank=True, null=True)
+    relationship_score = models.IntegerField(choices=[(i, i) for i in range(1, 6)], default=3)
 
     def __str__(self):
-        return self.name
+        return f"{self.name} ({self.customer.name})"

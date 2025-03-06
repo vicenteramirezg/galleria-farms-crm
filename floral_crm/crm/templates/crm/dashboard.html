@@ -10,19 +10,19 @@
 
     <!-- Key Metrics Row -->
     <div class="row text-center mb-5">
-        <div class="col-md-4 mb-3">
+        <div class="col-md-4 mb-4">
             <div class="p-4 bg-light rounded shadow-sm">
                 <h4>Total Estimated Sales</h4>
                 <p class="display-6 text-success">${{ total_sales|intcomma }}</p>
             </div>
         </div>
-        <div class="col-md-4 mb-3">
+        <div class="col-md-4 mb-4">
             <div class="p-4 bg-light rounded shadow-sm">
                 <h4>Total Contacts</h4>
                 <p class="display-6 text-primary">{{ total_contacts }}</p>
             </div>
         </div>
-        <div class="col-md-4 mb-3">
+        <div class="col-md-4 mb-4">
             <div class="p-4 bg-light rounded shadow-sm">
                 <h4>Avg. Relationship Score</h4>
                 <p class="display-6 text-warning">{{ avg_relationship_score|floatformat:2 }}</p>
@@ -41,7 +41,7 @@
     </div>
 
     <!-- Upcoming Birthdays Table -->
-    <h2 class="mb-3">Upcoming Birthdays 🎂</h2>
+    <h2 class="mb-4">Upcoming Birthdays 🎂</h2>
     {% if upcoming_birthdays %}
         <div class="table-responsive mb-5">
             <table class="table table-striped shadow-sm">
@@ -60,7 +60,7 @@
                     <tr>
                         <td>{{ contact.name }}</td>
                         <td>{{ contact.customer.name }}</td>
-                        <td>{{ contact.birthday|date:"F j" }}</td>
+                        <td>{{ contact.clean_birthday }}</td>
                         <td>{{ contact.relationship_score }}</td>
                         <td>
                             <a href="tel:{{ contact.phone }}" class="text-decoration-none">
@@ -71,7 +71,7 @@
                         <td>
                             <a href="https://wa.me/{{ contact.phone }}?text=Happy%20birthday,%20{{ contact.name }}!" 
                             class="btn btn-success btn-sm" target="_blank">
-                                <i class="fab fa-whatsapp"></i> Send Wish
+                                <i class="fab fa-whatsapp"></i> Send Message
                             </a>
                         </td>
                     </tr>
@@ -84,7 +84,7 @@
     {% endif %}
 
     <!-- Customers Summary Table -->
-    <h2 class="mb-3">Customer Overview</h2>
+    <h2 class="mb-4">Customer Overview</h2>
     <div class="table-responsive mb-5">
         <table class="table table-striped shadow-sm">
             <thead class="thead-dark">
@@ -141,39 +141,18 @@
                     y: {
                         beginAtZero: true
                     }
-                },
-                plugins: {
-                    legend: {
-                        display: false  // Hide legend for a cleaner look
-                    }
                 }
             }
         });
-
-        // Resize chart dynamically
-        function resizeChart() {
-            var chartContainer = document.querySelector('.chart-container');
-            if (window.innerWidth > 992) {  // Large screens (desktops)
-                chartContainer.style.height = "400px";
-            } else {  // Small screens (mobile/tablets)
-                chartContainer.style.height = "250px";
-            }
-            chart.resize();
-        }
-
-        window.addEventListener("resize", resizeChart);
-        resizeChart();  // Call once on load
     });
 </script>
 
-<!-- Custom CSS for spacing and chart scaling -->
+<!-- Custom CSS -->
 <style>
     .chart-container {
-        position: relative;
         width: 100%;
-        max-width: 800px;  /* Wider for desktop */
-        min-width: 300px;  /* Smallest width for mobile */
-        height: auto;
+        max-width: 900px;
+        height: 400px; /* Bigger for desktops */
         margin: auto;
     }
 </style>

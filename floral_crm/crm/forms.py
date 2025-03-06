@@ -54,22 +54,34 @@ class CustomerForm(forms.ModelForm):
 class ContactForm(forms.ModelForm):
     class Meta:
         model = Contact
-        fields = ['name', 'phone', 'email', 'customer', 'relationship_score', 'birthday']
-        widgets = {
-            'birthday': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-        }
+        fields = ['customer', 'name', 'phone', 'email', 'address', 'birthday_month', 'birthday_day', 'relationship_score']
 
     def __init__(self, *args, **kwargs):
-        user = kwargs.pop('user', None)  # Get user from kwargs
+        user = kwargs.pop('user', None)  # ✅ Get logged-in user
         super().__init__(*args, **kwargs)
 
-        if user:
-            if user.profile.role == Role.EXECUTIVE:
-                # Executives can see all customers
-                self.fields['customer'].queryset = Customer.objects.all()
-            else:
-                # Salespersons can only see their own customers
-                self.fields['customer'].queryset = Customer.objects.filter(salesperson=user.salesperson)
+        # ✅ Use the choices from the model
+        self.fields["birthday_month"].widget = forms.Select(choices=Contact.MONTHS)
+        self.fields["birthday_day"].widget = forms.NumberInput(attrs={"type": "number", "min": 1, "max": 31})
+
+        # ✅ Ensure correct customer filtering
+        if user and hasattr(user, 'profile') and user.profile.role == "Salesperson":
+            self.fields["customer"].queryset = Customer.objects.filter(salesperson=user.salesperson)
+        else:
+            self.fields["customer"].queryset = Customer.objects.all()
+
+        # ✅ Pre-fill existing values if available
+        if self.instance and self.instance.pk:
+            self.fields["birthday_month"].initial = self.instance.birthday_month
+            self.fields["birthday_day"].initial = self.instance.birthday_day
+            self.fields["customer"].disabled = True  # 🔒 Make customer non-editable when editing a contact
+
+        # Apply Bootstrap classes & center alignment
+        for field_name, field in self.fields.items():
+            field.widget.attrs.update({"class": "form-control text-center"})  # Centers text inside fields
+
+        # Specifically control width for Address field
+        self.fields["address"].widget.attrs.update({"style": "max-width: 400px; margin: 0 auto; max-height: 100px"})  # Centered & fixed width
 
 class SignupForm(UserCreationForm):
     first_name = forms.CharField(max_length=30, required=True, help_text='Required.')

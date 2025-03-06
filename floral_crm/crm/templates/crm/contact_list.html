@@ -15,14 +15,14 @@
     {% if grouped_contacts %}
         {% for department, customers in grouped_contacts.items %}
             <div class="mb-5">
-                <h2 class="text-primary">{{ customers.0.get_department_display }}</h2> <!-- ✅ Department Name -->
+                <h2 class="text-primary">{{ customers.0.get_department_display }}</h2>
                 <hr>
                 
                 {% for customer in customers %}
                     <div class="mb-4">
                         <h3 class="text-dark">{{ customer.name }}</h3>
                         <div class="row">
-                            {% for contact in customer.contacts.all|dictsort:"name" %}  <!-- ✅ Sort Contacts by Name -->
+                            {% for contact in customer.contacts.all|dictsort:"name" %}
                                 <div class="col-md-6 col-lg-4 mb-4">
                                     <div class="card shadow-sm h-100">
                                         <div class="card-body">
@@ -38,7 +38,7 @@
                                                     <strong>Phone:</strong> {{ contact.phone }}
                                                 </li>
                                                 <li class="mb-2">
-                                                    <strong>Birthday:</strong> {{ contact.birthday|default:"Not provided" }}
+                                                    <strong>Birthday:</strong> {{ contact.clean_birthday }}
                                                 </li>
                                                 <li class="mb-2">
                                                     <span class="badge bg-info">Score: {{ contact.relationship_score }}</span>
@@ -70,7 +70,6 @@
 {% endblock %}
 
 {% block scripts %}
-<!-- Optional: Add any custom JavaScript if needed -->
 <script>
     // Example of dynamic interactivity (if required)
 </script>

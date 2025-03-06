@@ -19,7 +19,6 @@
             <div class="mb-3">
                 <label for="id_phone" class="form-label font-weight-bold">Phone:</label>
                 <input type="tel" id="id_phone" class="form-control">
-                <!-- Hidden Input to Store Full International Format -->
                 <input type="hidden" id="id_phone_full" name="phone" value="{{ form.phone.value }}">
             </div>
 
@@ -29,11 +28,33 @@
                 {{ form.email }}
             </div>
 
-            <!-- Birthday Field -->
+            <!-- Address Field -->
             <div class="mb-3">
-                <label for="id_birthday" class="form-label font-weight-bold">Birthday:</label>
-                <input type="date" id="id_birthday" name="birthday" class="form-control"
-                    value="{{ form.birthday.value|date:'Y-m-d' }}">
+                <label for="id_address" class="form-label font-weight-bold">Address:</label>
+                {{ form.address }}
+            </div>
+
+            <!-- Birthday Fields -->
+            <div class="mb-3">
+                <label class="form-label font-weight-bold">Birthday:</label>
+                <div class="row">
+                    <div class="col-md-6">
+                        <label for="id_birthday_month" class="form-label">Month:</label>
+                        <select name="birthday_month" id="id_birthday_month" class="form-control">
+                            <option value="" disabled {% if not form.birthday_month.value %}selected{% endif %}>Choose Month</option>
+                            {% for month in form.fields.birthday_month.choices %}
+                                <option value="{{ month.0 }}" {% if form.birthday_month.value == month.0|stringformat:"s" %}selected{% endif %}>
+                                    {{ month.1 }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="id_birthday_day" class="form-label">Day:</label>
+                        <input type="number" id="id_birthday_day" name="birthday_day" class="form-control" min="1" max="31"
+                            value="{{ form.birthday_day.value }}">
+                    </div>
+                </div>
             </div>
 
             <!-- Relationship Score Field (Star Rating) -->
@@ -76,7 +97,7 @@
         direction: rtl;
         font-size: 2rem;
         display: flex;
-        justify-content: flex-start; /* Align stars to the left */
+        justify-content: flex-start;
         gap: 5px;
     }
     .star-rating input {
@@ -111,10 +132,9 @@
         // Pre-fill visible phone input with formatted number
         let storedPhone = hiddenInput.value;
         if (storedPhone) {
-            iti.setNumber(storedPhone); // Set the number in intl-tel-input
+            iti.setNumber(storedPhone);
         }
 
-        // Real-time phone number formatting as user types
         phoneInput.addEventListener("input", function() {
             let phoneNumber = phoneInput.value.replace(/\D/g, '');
             if (phoneNumber.length > 6) {
@@ -125,24 +145,18 @@
             phoneInput.value = phoneNumber;
         });
 
-        // Ensure hidden input is updated on any change
         phoneInput.addEventListener("blur", function() {
-            hiddenInput.value = iti.getNumber(); // Update hidden field
-            console.log("Hidden phone field updated:", hiddenInput.value); // Debugging
+            hiddenInput.value = iti.getNumber();
         });
 
-        // Ensure only the correctly formatted phone number is submitted
         document.querySelector("form").addEventListener("submit", function(event) {
-            var fullPhoneNumber = iti.getNumber(); // Get full international number
-
+            var fullPhoneNumber = iti.getNumber();
             if (!fullPhoneNumber) {
                 event.preventDefault();
                 alert("Please enter a valid phone number.");
                 return;
             }
-
-            hiddenInput.value = fullPhoneNumber; // Store full number in hidden input
-            console.log("Submitting phone:", hiddenInput.value); // Debugging: Log the value
+            hiddenInput.value = fullPhoneNumber;
         });
     });
 </script>
