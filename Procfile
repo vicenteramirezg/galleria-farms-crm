@@ -1,1 +1,1 @@
-web: gunicorn --chdir floral_crm floral_crm.wsgi --log-file -
+web: gunicorn --chdir floral_crm floral_crm.floral_crm.wsgi --log-file -
