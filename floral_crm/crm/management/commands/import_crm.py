@@ -78,4 +78,3 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS(f"Imported {contact_first_name} {contact_last_name} under {customer_name}"))
 
         self.stdout.write(self.style.SUCCESS("CRM Data Import Completed!"))
-

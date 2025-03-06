@@ -3,64 +3,72 @@
 {% block title %}Edit Contact - Floral CRM{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="form-container bg-light p-4 rounded shadow-sm">
-        <h2 class="mb-4">Edit Contact</h2>
+<div class="container py-5">
+    <div class="form-container bg-light p-4 rounded shadow-sm mx-auto" style="max-width: 600px;">
+        <h2 class="mb-4 text-center">Edit Contact</h2>
+
+        {% if form.errors %}
+            <div class="alert alert-danger">
+                <ul>
+                    {% for field in form %}
+                        {% for error in field.errors %}
+                            <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                        {% endfor %}
+                    {% endfor %}
+                    {% for error in form.non_field_errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
         <form method="post">
             {% csrf_token %}
-            
-            <!-- Name Field -->
-            <div class="mb-3">
-                <label for="id_name" class="form-label font-weight-bold">Name:</label>
+
+            <!-- Name -->
+            <div class="mb-3 text-center">
+                <label for="id_name" class="form-label font-weight-bold">Full Name:</label>
                 {{ form.name }}
             </div>
 
-            <!-- Phone Field (Visible) -->
-            <div class="mb-3">
-                <label for="id_phone" class="form-label font-weight-bold">Phone:</label>
-                <input type="tel" id="id_phone" class="form-control">
+            <!-- Phone Number -->
+            <div class="mb-3 text-center">
+                <label for="id_phone" class="form-label font-weight-bold">Phone Number:</label>
+                <input type="tel" id="id_phone" class="form-control text-center">
                 <input type="hidden" id="id_phone_full" name="phone" value="{{ form.phone.value }}">
             </div>
 
-            <!-- Email Field -->
-            <div class="mb-3">
+            <!-- Email -->
+            <div class="mb-3 text-center">
                 <label for="id_email" class="form-label font-weight-bold">Email:</label>
                 {{ form.email }}
             </div>
 
-            <!-- Address Field -->
-            <div class="mb-3">
+            <!-- Address (Smaller Input) -->
+            <div class="mb-3 text-center">
                 <label for="id_address" class="form-label font-weight-bold">Address:</label>
                 {{ form.address }}
             </div>
 
-            <!-- Birthday Fields -->
-            <div class="mb-3">
+            <!-- Birthday Selection (Two Fields in One Row) -->
+            <div class="mb-3 text-center">
                 <label class="form-label font-weight-bold">Birthday:</label>
-                <div class="row">
-                    <div class="col-md-6">
-                        <label for="id_birthday_month" class="form-label">Month:</label>
-                        <select name="birthday_month" id="id_birthday_month" class="form-control">
-                            <option value="" disabled {% if not form.birthday_month.value %}selected{% endif %}>Choose Month</option>
-                            {% for month in form.fields.birthday_month.choices %}
-                                <option value="{{ month.0 }}" {% if form.birthday_month.value == month.0|stringformat:"s" %}selected{% endif %}>
-                                    {{ month.1 }}
-                                </option>
-                            {% endfor %}
-                        </select>
+                <div class="d-flex justify-content-center gap-3">
+                    <div>
+                        <label for="id_birthday_month">Month:</label>
+                        {{ form.birthday_month }}
                     </div>
-                    <div class="col-md-6">
-                        <label for="id_birthday_day" class="form-label">Day:</label>
-                        <input type="number" id="id_birthday_day" name="birthday_day" class="form-control" min="1" max="31"
-                            value="{{ form.birthday_day.value }}">
+                    <div>
+                        <label for="id_birthday_day">Day:</label>
+                        {{ form.birthday_day }}
                     </div>
                 </div>
             </div>
 
-            <!-- Relationship Score Field (Star Rating) -->
-            <div class="mb-3">
-                <label class="form-label font-weight-bold d-block">Relationship Score:</label>
-                <div class="star-rating">
+            <!-- Relationship Score -->
+            <div class="mb-4 text-center">
+                <label class="form-label font-weight-bold">Relationship Score:</label>
+                <div class="star-rating d-flex justify-content-center">
                     <input type="radio" id="star5" name="relationship_score" value="5" {% if form.relationship_score.value == 5 %}checked{% endif %}>
                     <label for="star5" title="5 stars">&#9733;</label>
 
@@ -78,10 +86,13 @@
                 </div>
             </div>
 
-            <!-- Form Actions -->
-            <div class="d-flex justify-content-between">
-                <button type="submit" class="btn btn-primary">Save Changes</button>
-                <a href="{% url 'crm:dashboard' %}" class="btn btn-secondary">Cancel</a>
+            <!-- Submit Button -->
+            <div class="text-center mt-4">
+                <button type="submit" class="btn btn-primary btn-lg">Save Changes</button>
+            </div>
+            <!-- Back to Dashboard Button -->
+            <div class="text-center mt-4">
+                <a href="{% url 'crm:dashboard' %}" class="btn btn-secondary btn-lg">Cancel</a>
             </div>
         </form>
     </div>
@@ -91,13 +102,18 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/css/intlTelInput.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/intlTelInput.min.js"></script>
 
-<!-- Custom CSS for Star Rating -->
+<!-- Custom CSS -->
 <style>
+    .form-container {
+        max-width: 500px;
+        margin: auto;
+    }
+
     .star-rating {
         direction: rtl;
-        font-size: 2rem;
+        font-size: 1.5rem;
         display: flex;
-        justify-content: flex-start;
+        justify-content: center;
         gap: 5px;
     }
     .star-rating input {
@@ -113,6 +129,20 @@
     .star-rating label:hover,
     .star-rating label:hover ~ label {
         color: #ffcc00;
+    }
+
+    .d-flex.justify-content-center {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+    }
+
+    /* Smaller Address Field */
+    #id_address {
+        width: 100%;
+        max-width: 400px;
+        max-height: 100px;
     }
 </style>
 
@@ -135,8 +165,9 @@
             iti.setNumber(storedPhone);
         }
 
+        // Format phone number as user types
         phoneInput.addEventListener("input", function() {
-            let phoneNumber = phoneInput.value.replace(/\D/g, '');
+            let phoneNumber = phoneInput.value.replace(/\D/g, ''); // Remove non-numeric characters
             if (phoneNumber.length > 6) {
                 phoneNumber = phoneNumber.replace(/(\d{3})(\d{3})(\d{0,4})/, "$1-$2-$3");
             } else if (phoneNumber.length > 3) {
@@ -145,13 +176,15 @@
             phoneInput.value = phoneNumber;
         });
 
+        // Ensure hidden input is updated on blur
         phoneInput.addEventListener("blur", function() {
             hiddenInput.value = iti.getNumber();
         });
 
+        // Before form submission, validate phone number
         document.querySelector("form").addEventListener("submit", function(event) {
             var fullPhoneNumber = iti.getNumber();
-            if (!fullPhoneNumber) {
+            if (!fullPhoneNumber.trim()) {
                 event.preventDefault();
                 alert("Please enter a valid phone number.");
                 return;

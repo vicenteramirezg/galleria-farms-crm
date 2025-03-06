@@ -157,28 +157,51 @@ class CustomerUpdateView(LoginRequiredMixin, SalespersonAccessMixin, UpdateView)
     success_url = reverse_lazy('crm:customer_list')
 
     def get_queryset(self):
-        """ Ensure the salesperson can only edit their own customers """
-        queryset = Customer.objects.filter(salesperson=self.request.user.salesperson)
-        logger.info(f"CustomerEditView - Filtering customers for salesperson {self.request.user.salesperson}: {queryset}")
+        """ 
+        Ensure the correct access:
+        - Executives can edit all customers.
+        - Salespersons can only edit their own customers.
+        """
+        user = self.request.user
+
+        if user.profile.role == "Executive":
+            queryset = Customer.objects.all()  # ✅ Executives see all customers
+        else:
+            queryset = Customer.objects.filter(salesperson=user.salesperson)  # ✅ Salespersons see only their own
+
+        logger.info(f"CustomerEditView - Filtering customers for user {user}: {queryset}")
         return queryset
 
-    def form_valid(self, form):
-        """ Ensure salesperson remains unchanged and log the exact form data received """
-        form.instance.salesperson = self.request.user.salesperson  # Keep salesperson unchanged
+    def get_form_kwargs(self):
+        """ Pass the logged-in user to the form to ensure proper salesperson handling. """
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user  # ✅ Pass user to the form
+        return kwargs
 
-        # 🛑 Log the form's raw input data
+    def form_valid(self, form):
+        """ 
+        - Ensure Salesperson remains unchanged if edited by a Salesperson.
+        - Allow Executives to modify the assigned Salesperson.
+        - Log updates for debugging.
+        """
+        user = self.request.user
+
+        # 🛑 Log the raw input data before saving
         logger.info(f"🔹 Form Data Before Saving: {form.cleaned_data}")
+
+        if user.profile.role == "Salesperson":
+            form.instance.salesperson = self.object.salesperson  # ✅ Keep original salesperson
 
         response = super().form_valid(form)
 
-        # 🔥 Fetch updated customer directly from the database to verify
+        # 🔥 Fetch updated customer from the database to verify changes
         updated_customer = get_object_or_404(Customer, id=form.instance.id)
         logger.info(f"✅ Database After Update: {updated_customer.name}, Sales: {updated_customer.estimated_yearly_sales}")
 
         return response
 
     def form_invalid(self, form):
-        """ Log invalid form submissions """
+        """ Log invalid form submissions for debugging """
         logger.error(f"CustomerEditView - FORM INVALID: {form.errors}")
         return super().form_invalid(form)
 

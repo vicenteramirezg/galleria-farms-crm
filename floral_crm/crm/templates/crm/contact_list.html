@@ -28,8 +28,10 @@
                                         <div class="card-body">
                                             <h3 class="card-title d-flex justify-content-between align-items-center">
                                                 <span><strong>{{ contact.name }}</strong></span>
-                                                <a href="{% url 'crm:contact_edit' contact.id %}" class="btn btn-sm btn-outline-primary">Edit</a>
-                                            </h3>
+                                                <a href="{% url 'crm:contact_edit' contact.id %}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-edit"></i> Edit
+                                                </a>
+                                            </h3>                                            
                                             <ul class="list-unstyled">
                                                 <li class="mb-2">
                                                     <strong>Email:</strong> {{ contact.email }}

@@ -20,15 +20,24 @@
             <div class="row">
                 {% for customer in customers %}
                     <div class="col-md-6 col-lg-4 mb-4">
-                        <div class="card shadow-sm h-100">
+                        <div class="card shadow-sm h-100 position-relative">
                             <div class="card-body">
+                                <!-- Edit Button in Upper Right Corner -->
+                                <a href="{% url 'crm:customer_edit' customer.id %}" 
+                                   class="btn btn-sm btn-outline-primary position-absolute top-0 end-0 mt-2 me-2">
+                                    <i class="fas fa-edit"></i> Edit
+                                </a>
+
+                                <!-- Customer Name -->
                                 <h3 class="card-title">
-                                    <a href="{% url 'crm:customer_detail' customer.id %}"><strong>{{ customer.name }}</strong></a>
+                                    <a href="{% url 'crm:customer_detail' customer.id %}" 
+                                       class="text-decoration-none fw-bold">
+                                        {{ customer.name }}
+                                    </a>
                                 </h3>                                
 
                                 <!-- Estimated Yearly Sales -->
-                                <h6 class="text-muted mb-3">Estimated Yearly Sales: ${{ customer.estimated_yearly_sales|intcomma }}</h6>
-
+                                <h6 class="text-muted">Estimated Yearly Sales: ${{ customer.estimated_yearly_sales|intcomma }}</h6>
                             </div>
                         </div>
                     </div>
