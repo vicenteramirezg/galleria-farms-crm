@@ -11,7 +11,14 @@
     <!-- Customer Details -->
     <div class="card mb-4 shadow-sm">
         <div class="card-body">
-            <h3 class="card-title">Customer Details</h3>
+            <!-- Title with Edit Button -->
+            <div class="d-flex justify-content-between align-items-center">
+                <h3 class="card-title">Customer Details</h3>
+                <a href="{% url 'crm:customer_edit' customer.id %}" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-edit"></i> Edit
+                </a>
+            </div>
+
             <ul class="list-unstyled">
                 <li><strong>Department:</strong> {{ customer.get_department_display }}</li>
                 <li><strong>Estimated Yearly Sales:</strong> ${{ customer.estimated_yearly_sales|intcomma }}</li>
@@ -28,20 +35,28 @@
                 <div class="col-md-6 col-lg-4 mb-4">
                     <div class="card shadow-sm h-100">
                         <div class="card-body">
-                            <h4 class="card-title">{{ contact.name }}</h4>
+                            <!-- Card Title with Edit Button -->
+                            <h4 class="card-title d-flex justify-content-between align-items-center">
+                                <span><strong>{{ contact.name }}</strong></span>
+                                <a href="{% url 'crm:contact_edit' contact.id %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-edit"></i> Edit
+                                </a>
+                            </h4>
+
+                            <!-- Contact Details -->
                             <ul class="list-unstyled">
                                 <li><strong>Email:</strong> {{ contact.email }}</li>
                                 <li><strong>Phone:</strong> {{ contact.phone }}</li>
-                                <li><strong>Birthday:</strong> {{ contact.birthday|default:"Not provided" }}</li>
-                                <li><strong>Relationship Score:</strong> {{ contact.relationship_score }}</li>
+                                <li><strong>Birthday:</strong> {{ contact.clean_birthday }}</li>
+                                <li class="mb-2">
+                                    <span class="badge bg-info">Relationship Score: {{ contact.relationship_score }}</span>
+                                </li>
                             </ul>
 
-                            <!-- ✅ WhatsApp Chat Button -->
+                            <!-- WhatsApp Chat Button -->
                             <a href="https://wa.me/{{ contact.whatsapp_format }}" class="btn btn-success btn-sm mb-2" target="_blank">
                                 <i class="fab fa-whatsapp"></i> Chat on WhatsApp
                             </a>
-
-                            <a href="{% url 'crm:contact_edit' contact.id %}" class="btn btn-sm btn-outline-primary">Edit Contact</a>
                         </div>
                     </div>
                 </div>

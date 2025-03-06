@@ -8,8 +8,8 @@
         <h2 class="mb-4 text-center">Add a New Customer</h2>
 
         {% if form.errors %}
-            <div class="alert alert-danger">
-                <ul>
+            <div class="alert alert-danger mx-auto" style="max-width: 400px;">
+                <ul class="mb-0">
                     {% for field in form %}
                         {% for error in field.errors %}
                             <li><strong>{{ field.label }}:</strong> {{ error }}</li>
@@ -22,37 +22,37 @@
             </div>
         {% endif %}
 
-        <form method="post">
+        <form method="post" class="mx-auto" style="max-width: 400px;">
             {% csrf_token %}
 
             <!-- Customer Name -->
-            <div class="mb-3 text-center">
-                <label for="id_name" class="form-label font-weight-bold">Customer Name:</label>
+            <div class="mb-3 d-flex align-items-center justify-content-center">
+                <label for="id_name" class="form-label font-weight-bold me-2" style="min-width: 150px;">Customer Name:</label>
                 <input type="text" name="name" value="{{ form.name.value|default_if_none:'' }}" 
-                       class="form-control text-center" id="id_name" required>
+                       class="form-control" id="id_name" style="max-width: 200px;" required>
             </div>
 
             <!-- Department Selection -->
-            <div class="mb-3 text-center">
-                <label for="id_department" class="form-label font-weight-bold">Department:</label>
+            <div class="mb-3 d-flex align-items-center justify-content-center">
+                <label for="id_department" class="form-label font-weight-bold me-2" style="min-width: 150px;">Department:</label>
                 {{ form.department }}
             </div>
 
             <!-- Salesperson Field (Visible Only for Executives) -->
             {% if user.profile.role == "Executive" %}
-            <div class="mb-3 text-center">
-                <label for="id_salesperson" class="form-label font-weight-bold">Assign Salesperson:</label>
+            <div class="mb-3 d-flex align-items-center justify-content-center">
+                <label for="id_salesperson" class="form-label font-weight-bold me-2" style="min-width: 150px;">Assign Salesperson:</label>
                 {{ form.salesperson }}
             </div>
             {% endif %}
 
             <!-- Estimated Yearly Sales -->
-            <div class="mb-3 text-center">
-                <label for="id_estimated_yearly_sales_display" class="form-label font-weight-bold">
+            <div class="mb-3 d-flex align-items-center justify-content-center">
+                <label for="id_estimated_yearly_sales_display" class="form-label font-weight-bold me-2" style="min-width: 150px;">
                     Estimated Yearly Sales:
                 </label>
                 <!-- Visible field (formatted) -->
-                <input type="text" id="id_estimated_yearly_sales_display" class="form-control text-center" required>
+                <input type="text" id="id_estimated_yearly_sales_display" class="form-control" style="max-width: 200px;" required>
                 <!-- Hidden field that actually gets submitted -->
                 <input type="hidden" id="id_estimated_yearly_sales" name="estimated_yearly_sales">
             </div>
@@ -77,9 +77,21 @@
         margin: auto;
     }
 
-    .text-center label {
-        display: block;
-        text-align: center;
+    /* Center the form and its contents */
+    form {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    /* Ensure form controls take up remaining space */
+    .form-control {
+        flex-grow: 1;
+    }
+
+    /* Add a minimum width to labels to ensure they stay in one line */
+    .form-label {
+        white-space: nowrap; /* Prevent label text from wrapping */
     }
 </style>
 

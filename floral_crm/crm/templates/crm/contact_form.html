@@ -8,8 +8,8 @@
         <h2 class="mb-4 text-center">Edit Contact</h2>
 
         {% if form.errors %}
-            <div class="alert alert-danger">
-                <ul>
+            <div class="alert alert-danger mx-auto" style="max-width: 400px;">
+                <ul class="mb-0">
                     {% for field in form %}
                         {% for error in field.errors %}
                             <li><strong>{{ field.label }}:</strong> {{ error }}</li>
@@ -22,37 +22,37 @@
             </div>
         {% endif %}
 
-        <form method="post">
+        <form method="post" class="mx-auto" style="max-width: 400px;">
             {% csrf_token %}
 
             <!-- Name -->
-            <div class="mb-3 text-center">
-                <label for="id_name" class="form-label font-weight-bold">Full Name:</label>
+            <div class="mb-3 d-flex align-items-center justify-content-center">
+                <label for="id_name" class="form-label font-weight-bold me-2" style="min-width: 150px;">Full Name:</label>
                 {{ form.name }}
             </div>
 
             <!-- Phone Number -->
-            <div class="mb-3 text-center">
-                <label for="id_phone" class="form-label font-weight-bold">Phone Number:</label>
-                <input type="tel" id="id_phone" class="form-control text-center">
+            <div class="mb-3 d-flex align-items-center justify-content-center">
+                <label for="id_phone" class="form-label font-weight-bold me-2" style="min-width: 150px;">Phone Number:</label>
+                <input type="tel" id="id_phone" class="form-control" style="max-width: 200px;">
                 <input type="hidden" id="id_phone_full" name="phone" value="{{ form.phone.value }}">
             </div>
 
             <!-- Email -->
-            <div class="mb-3 text-center">
-                <label for="id_email" class="form-label font-weight-bold">Email:</label>
+            <div class="mb-3 d-flex align-items-center justify-content-center">
+                <label for="id_email" class="form-label font-weight-bold me-2" style="min-width: 150px;">Email:</label>
                 {{ form.email }}
             </div>
 
             <!-- Address (Smaller Input) -->
-            <div class="mb-3 text-center">
-                <label for="id_address" class="form-label font-weight-bold">Address:</label>
+            <div class="mb-3 d-flex align-items-center justify-content-center">
+                <label for="id_address" class="form-label font-weight-bold me-2" style="min-width: 150px;">Address:</label>
                 {{ form.address }}
             </div>
 
             <!-- Birthday Selection (Two Fields in One Row) -->
             <div class="mb-3 text-center">
-                <label class="form-label font-weight-bold">Birthday:</label>
+                <label class="form-label font-weight-bold me-2" style="min-width: 150px;">Birthday:</label>
                 <div class="d-flex justify-content-center gap-3">
                     <div>
                         <label for="id_birthday_month">Month:</label>
@@ -67,7 +67,7 @@
 
             <!-- Relationship Score -->
             <div class="mb-4 text-center">
-                <label class="form-label font-weight-bold">Relationship Score:</label>
+                <label class="form-label font-weight-bold me-2" style="min-width: 150px;">Relationship Score:</label>
                 <div class="star-rating d-flex justify-content-center">
                     <input type="radio" id="star5" name="relationship_score" value="5" {% if form.relationship_score.value == 5 %}checked{% endif %}>
                     <label for="star5" title="5 stars">&#9733;</label>
@@ -141,7 +141,7 @@
     /* Smaller Address Field */
     #id_address {
         width: 100%;
-        max-width: 400px;
+        max-width: 200px;
         max-height: 100px;
     }
 </style>

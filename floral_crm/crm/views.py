@@ -424,8 +424,23 @@ class CustomerDetailView(LoginRequiredMixin, DetailView):
 
         # Get all contacts related to the customer
         contacts = customer.contacts.all()
-        
-        # ✅ Fix: Use Avg from django.db.models
+
+        # Calculate clean_birthday for each contact
+        for contact in contacts:
+            # Ensure birthday_month is an integer
+            birthday_month = int(contact.birthday_month) if contact.birthday_month else None
+            birthday_day = contact.birthday_day
+
+            # Generate a clean birthday format
+            if birthday_month and birthday_day:
+                clean_birthday = f"{MONTH_NAMES.get(birthday_month, 'Unknown')}, {birthday_day}"
+            else:
+                clean_birthday = "Not provided"
+
+            # Attach clean_birthday to the contact
+            contact.clean_birthday = clean_birthday
+
+        # Calculate average relationship score
         avg_relationship_score = contacts.aggregate(avg_score=Avg("relationship_score"))["avg_score"]
 
         context.update({
