@@ -71,6 +71,14 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
 
+SECURE_SSL_REDIRECT = True  # Redirect all HTTP traffic to HTTPS
+SESSION_COOKIE_SECURE = True  # Ensure session cookies are sent over HTTPS
+CSRF_COOKIE_SECURE = True  # Ensure CSRF cookies are sent over HTTPS
+SECURE_HSTS_SECONDS = 31536000  # Enables HTTP Strict Transport Security (HSTS)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")  # Enable SSL behind a proxy
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -128,6 +136,8 @@ USE_TZ = True
 
 CSRF_TRUSTED_ORIGINS = [
     "https://galleria-farms-crm.up.railway.app",
+    "https://crm.galleriafarms.com",
+    "https://galleriafarms.com",
     "http://127.0.0.1",
     "http://localhost",
 ]
