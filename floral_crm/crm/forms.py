@@ -103,7 +103,7 @@ class SignupForm(UserCreationForm):
     first_name = forms.CharField(max_length=30, required=True, help_text='Required.')
     last_name = forms.CharField(max_length=30, required=True, help_text='Required.')
     phone = forms.CharField(
-        max_length=20,  # To store country code + number as a string
+        max_length=20,  # Store country code + number
         required=True,
         help_text='Required. Enter a valid phone number including country code.',
     )
@@ -112,11 +112,16 @@ class SignupForm(UserCreationForm):
         model = User
         fields = ['username', 'first_name', 'last_name', 'email', 'phone', 'password1', 'password2']
 
+    def clean_phone(self):
+        phone_number = self.cleaned_data['phone']
+        if not phone_number.startswith("+"):
+            phone_number = f"+{phone_number}"
+        return phone_number  # Ensures phone is always stored with "+"
+
     def save(self, commit=True):
         user = super().save(commit=False)
-        phone_number = self.cleaned_data['phone']  # Ensure phone is correctly extracted
+        user.salesperson.phone = self.cleaned_data['phone']  # Store formatted phone number
         if commit:
             user.save()
-            user.salesperson.phone = phone_number  # Save phone to the Salesperson model
             user.salesperson.save()
         return user

@@ -90,15 +90,15 @@
             input.value = phoneNumber;
         });
 
-        // Ensure phone number is stored in full international format before submitting
+        // Ensure the phone number is submitted with the "+" sign
         document.querySelector("form").addEventListener("submit", function(event) {
-            var fullPhoneNumber = iti.getNumber();  // Get full number with country code (e.g. +17868755569)
+            var fullPhoneNumber = iti.getNumber();  // Get full international number
             if (!fullPhoneNumber) {
                 event.preventDefault();  // Stop form submission
                 alert("Please enter a valid phone number.");
                 return;
             }
-            input.value = fullPhoneNumber.replace(/\D/g, '');  // Store number without formatting
+            input.value = fullPhoneNumber;  // Ensure "+1" or other country code is included
         });
     });
 </script>
