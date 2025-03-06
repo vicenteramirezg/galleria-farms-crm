@@ -1,1 +1,1 @@
-web: gunicorn --chdir floral_crm --timeout 120 floral_crm.wsgi --bind 0.0.0.0:$PORT --log-file -
+web: sh -c "until pg_isready -h trolley.proxy.rlwy.net -p 14745; do echo 'Waiting for Postgres...'; sleep 2; done; gunicorn --chdir floral_crm --timeout 120 floral_crm.wsgi --bind 0.0.0.0:$PORT --log-file -"
