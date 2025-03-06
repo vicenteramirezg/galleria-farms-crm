@@ -1,1 +1,1 @@
-web: gunicorn --chdir floral_crm --bind 0.0.0.0:$PORT --timeout 120 floral_crm.wsgi --log-file -
+web: gunicorn --chdir floral_crm --timeout 120 floral_crm.wsgi --bind 0.0.0.0:$PORT --log-file -
