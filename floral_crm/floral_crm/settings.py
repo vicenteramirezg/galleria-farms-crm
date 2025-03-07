@@ -27,7 +27,7 @@ SECRET_KEY = os.getenv("SECRET_KEY", "default-secret-key")
 DEBUG = os.getenv("DEBUG", "False") == "True"
 
 # ✅ Allowed Hosts
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+ALLOWED_HOSTS = [host.strip() for host in os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")]
 
 # ✅ Login & Logout Redirects
 LOGIN_URL = "/login/"  # Redirect users who are not logged in
@@ -77,9 +77,7 @@ SESSION_COOKIE_SECURE = True  # Ensures session cookies are sent over HTTPS
 CSRF_TRUSTED_ORIGINS = [
     "https://galleria-farms-crm.up.railway.app",
     "https://crm.galleriafarms.com",
-    "https://galleriafarms.com",
-    "http://127.0.0.1",
-    "http://localhost",
+    "https://galleriafarms.com"
 ]
 
 # ✅ Authentication Backends
