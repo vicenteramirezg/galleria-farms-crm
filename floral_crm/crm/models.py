@@ -77,9 +77,14 @@ class Contact(BaseModel):
     phone = models.CharField(max_length=20, blank=True, null=True)
     email = models.EmailField(blank=True, null=True)
     address = models.TextField(blank=True, null=True)
-    birthday_month = models.IntegerField(choices=MONTHS, blank=True, null=True)
-    birthday_day = models.IntegerField(blank=True, null=True)
-    relationship_score = models.IntegerField(choices=[(i, i) for i in range(1, 6)], default=3)
+
+    birthday_month = models.IntegerField(choices=MONTHS, blank=True, null=True)  # ✅ Allow nulls
+    birthday_day = models.IntegerField(blank=True, null=True)  # ✅ Allow nulls
+
+    relationship_score = models.IntegerField(
+        choices=[(i, i) for i in range(1, 6)],
+        default=None, blank=True, null=True  # ✅ Allow nulls, default is None
+    )
 
     def __str__(self):
         return f"{self.name} ({self.customer.name})"

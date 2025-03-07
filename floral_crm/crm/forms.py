@@ -80,33 +80,54 @@ class ContactForm(forms.ModelForm):
         fields = ['customer', 'name', 'phone', 'email', 'address', 'birthday_month', 'birthday_day', 'relationship_score']
 
     def __init__(self, *args, **kwargs):
-        user = kwargs.pop('user', None)  # ✅ Get the logged-in user
+        user = kwargs.pop('user', None)  # ✅ Get logged-in user
         super().__init__(*args, **kwargs)
 
-        # ✅ Use the choices from the model
-        self.fields["birthday_month"].widget = forms.Select(choices=Contact.MONTHS)
-        self.fields["birthday_day"].widget = forms.NumberInput(attrs={"type": "number", "min": 1, "max": 31})
+        # ✅ Make fields optional
+        self.fields["birthday_month"].required = False
+        self.fields["birthday_day"].required = False
+        self.fields["relationship_score"].required = False
 
         # ✅ Ensure correct customer filtering
-        if user and hasattr(user, 'profile'):
-            if user.profile.role == "Executive":
-                self.fields["customer"].queryset = Customer.objects.all()  # ✅ Executives see all customers
-            elif user.profile.role == "Salesperson":
-                self.fields["customer"].queryset = Customer.objects.filter(salesperson=user.salesperson)  # ✅ Salespersons see only their customers
-            elif "Manager" in user.profile.role:
-                department = user.profile.role.replace("Manager - ", "")  # Extract department
-                self.fields["customer"].queryset = Customer.objects.filter(department__iexact=department)  # ✅ Managers see customers in their department
+        if user and hasattr(user, 'profile') and user.profile.role == "Salesperson":
+            self.fields["customer"].queryset = Customer.objects.filter(salesperson=user.salesperson)
+        else:
+            self.fields["customer"].queryset = Customer.objects.all()
 
-        # ✅ If editing an existing contact, keep customer selection locked
+        # ✅ Add a "Not Provided" option for birthday_month dropdown
+        month_choices = [(None, "Not Provided")] + list(Contact.MONTHS)
+        self.fields["birthday_month"].widget = forms.Select(choices=month_choices)
+
+        # ✅ Allow empty birthday_day
+        self.fields["birthday_day"].widget = forms.NumberInput(attrs={"type": "number", "min": 1, "max": 31})
+
+        # ✅ Pre-fill existing values if available
         if self.instance and self.instance.pk:
+            self.fields["birthday_month"].initial = self.instance.birthday_month
+            self.fields["birthday_day"].initial = self.instance.birthday_day
             self.fields["customer"].disabled = True  # 🔒 Keep customer non-editable when editing a contact
 
-        # ✅ Apply Bootstrap styling
+        # Apply Bootstrap classes & center alignment
         for field_name, field in self.fields.items():
             field.widget.attrs.update({"class": "form-control text-center"})  # Centers text inside fields
 
-        # ✅ Specifically control width for Address field
+        # Specifically control width for Address field
         self.fields["address"].widget.attrs.update({"style": "max-width: 400px; margin: 0 auto; max-height: 100px"})
+
+    def clean_relationship_score(self):
+        """ Ensure the default relationship score is 0 if left empty. """
+        score = self.cleaned_data.get("relationship_score")
+        return score if score is not None else 0  # ✅ Default to 0
+
+    def clean_birthday_month(self):
+        """ Allow birthday month to be null if 'Not Provided' is selected. """
+        month = self.cleaned_data.get("birthday_month")
+        return month if month else None  # ✅ Store null if not selected
+
+    def clean_birthday_day(self):
+        """ Allow birthday day to be null if empty. """
+        day = self.cleaned_data.get("birthday_day")
+        return day if day else None  # ✅ Store null if not provided
         
 class SignupForm(UserCreationForm):
     first_name = forms.CharField(max_length=30, required=True, help_text='Required.')
