@@ -379,14 +379,17 @@ def customer_list(request):
 def contact_list(request):
     """ Groups contacts by department → customer → ordered contacts """
 
-    # Fetch all customers with contacts under the logged-in salesperson, ordered by department and name
-    customers = Customer.objects.filter(salesperson=request.user.salesperson) \
-                                .prefetch_related('contacts') \
-                                .order_by("department", "name")
+    # ✅ Executives see all contacts; Salespersons see only their own
+    if request.user.profile.role == "Executive":
+        customers = Customer.objects.prefetch_related("contacts").order_by("department", "name")
+    else:
+        customers = Customer.objects.filter(salesperson=request.user.salesperson) \
+                                    .prefetch_related("contacts") \
+                                    .order_by("department", "name")
 
     grouped_contacts = defaultdict(list)
 
-    # Organize customers under their respective departments
+    # ✅ Organize customers under their respective departments
     for customer in customers:
         for contact in customer.contacts.all():
             # Ensure birthday_month is an integer
@@ -408,12 +411,15 @@ def contact_list(request):
 
 class ContactListView(LoginRequiredMixin, ListView):
     model = Contact
-    template_name = 'crm/contact_list.html'  # Your template for displaying contacts
-    context_object_name = 'contacts'  # Name used for the context in the template
+    template_name = "crm/contact_list.html"  # Your template for displaying contacts
+    context_object_name = "contacts"  # Name used for the context in the template
 
     def get_queryset(self):
-        # Filter contacts by the logged-in salesperson
-        return Contact.objects.filter(customer__salesperson=self.request.user.salesperson)
+        """ Executives see all contacts, Salespersons see only their own """
+        if self.request.user.profile.role == "Executive":
+            return Contact.objects.all()  # ✅ Executives see everything
+        return Contact.objects.filter(customer__salesperson=self.request.user.salesperson)  # ✅ Salesperson filter
+
 
 @login_required
 def add_contact(request):
