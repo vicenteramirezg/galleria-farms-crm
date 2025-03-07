@@ -90,9 +90,9 @@ class ContactForm(forms.ModelForm):
 
         # ✅ Ensure correct customer filtering
         if user and hasattr(user, 'profile') and user.profile.role == "Salesperson":
-            self.fields["customer"].queryset = Customer.objects.filter(salesperson=user.salesperson)
+            self.fields["customer"].queryset = Customer.objects.filter(salesperson=user.salesperson).order_by("name")
         else:
-            self.fields["customer"].queryset = Customer.objects.all()
+            self.fields["customer"].queryset = Customer.objects.all().order_by("name")
 
         # ✅ Add a "Not Provided" option for birthday_month dropdown
         month_choices = [(None, "Not Provided")] + list(Contact.MONTHS)
