@@ -6,53 +6,53 @@
 <!-- Welcome Message -->
 <div class="jumbotron text-center bg-light py-5">
     <h1 class="display-4 font-weight-bold">Welcome to Galleria Farms CRM!</h1>
-    <p class="lead">Your one-stop solution to manage customers, sales, and contacts with ease.</p>
+    <p class="lead">Streamline customer relationships, enhance communication, and boost your sales efficiency.</p>
 </div>
 
 <!-- Features Section -->
 <section class="container text-center">
-    <h2 class="mb-4">Key Features</h2>
-    <div class="row">
-        <div class="col-md-4 mb-4">
-            <div class="card shadow-sm border-light">
+    <h2 class="mb-4">What You Can Do</h2>
+    <div class="row justify-content-center">  <!-- Centering cards properly -->
+        <div class="col-md-4 d-flex">
+            <div class="card feature-card shadow-sm border-light w-100">
                 <div class="card-body">
-                    <h5 class="card-title">📊 Track Customer Data</h5>
-                    <p class="card-text">Easily manage and analyze customer data and sales performance.</p>
+                    <h5 class="card-title">🔐 Private Customer & Contact Management</h5>
+                    <p class="card-text">Your customers and contacts remain exclusive to you. Maintain full control and privacy over your data.</p>
                 </div>
             </div>
         </div>
-        <div class="col-md-4 mb-4">
-            <div class="card shadow-sm border-light">
+        <div class="col-md-4 d-flex">
+            <div class="card feature-card shadow-sm border-light w-100">
                 <div class="card-body">
-                    <h5 class="card-title">📞 Manage Contacts</h5>
-                    <p class="card-text">Track multiple points of contact for each customer.</p>
+                    <h5 class="card-title">📋 Organized Contact Information</h5>
+                    <p class="card-text">Keep track of important contact details, including emails, phone numbers, and addresses—all in one place.</p>
                 </div>
             </div>
         </div>
-        <div class="col-md-4 mb-4">
-            <div class="card shadow-sm border-light">
+        <div class="col-md-4 d-flex">
+            <div class="card feature-card shadow-sm border-light w-100">
                 <div class="card-body">
-                    <h5 class="card-title">📤 Export Data</h5>
-                    <p class="card-text">Export customer and contact data seamlessly to CSV.</p>
+                    <h5 class="card-title">🎉 Never Miss a Birthday</h5>
+                    <p class="card-text">Enhance customer relationships with automated birthday reminders, ensuring a personal touch in every interaction.</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-md-4 mb-4">
-            <div class="card shadow-sm border-light">
+    <div class="row justify-content-center mt-5">  <!-- Added spacing between rows -->
+        <div class="col-md-4 d-flex">
+            <div class="card feature-card shadow-sm border-light w-100">
                 <div class="card-body">
-                    <h5 class="card-title">🔒 Secure Access</h5>
-                    <p class="card-text">Role-based permissions for secure and customizable access.</p>
+                    <h5 class="card-title">🔒 Secure & Role-Based Access</h5>
+                    <p class="card-text">Control access with role-based permissions, ensuring only authorized users manage customer data.</p>
                 </div>
             </div>
         </div>
-        <div class="col-md-4 mb-4">
-            <div class="card shadow-sm border-light">
+        <div class="col-md-4 d-flex">
+            <div class="card feature-card shadow-sm border-light w-100">
                 <div class="card-body">
-                    <h5 class="card-title">🌐 Easy Login</h5>
-                    <p class="card-text">Login with Microsoft or Google for seamless authentication.</p>
+                    <h5 class="card-title">🔑 Simple & Secure Login</h5>
+                    <p class="card-text">Access your CRM with a username and password for a safe and reliable authentication process.</p>
                 </div>
             </div>
         </div>
@@ -61,9 +61,21 @@
 
 {% endblock %}
 
-{% block scripts %}
-<!-- Optional: Add custom JavaScript if needed -->
-<script>
-    // Example: Adding some dynamic content or effects here
-</script>
+{% block styles %}
+<style>
+    /* Improve spacing and responsiveness */
+    .feature-card {
+        transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+        border-radius: 10px;
+    }
+    .feature-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.2);
+    }
+    
+    /* Increase spacing between the two rows */
+    .mt-5 {
+        margin-top: 3rem !important;
+    }
+</style>
 {% endblock %}
