@@ -36,3 +36,11 @@ class ContactAdmin(admin.ModelAdmin):
     list_filter = ('customer', 'relationship_score', 'created_at')
     readonly_fields = ('created_at', 'updated_at', 'created_by', 'updated_by')
     ordering = ('name',)
+
+    # ✅ Make relationship_score, birthday_month, and birthday_day optional in admin
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        form.base_fields["relationship_score"].required = False
+        form.base_fields["birthday_month"].required = False
+        form.base_fields["birthday_day"].required = False
+        return form

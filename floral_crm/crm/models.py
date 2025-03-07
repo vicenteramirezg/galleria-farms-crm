@@ -82,8 +82,10 @@ class Contact(BaseModel):
     birthday_day = models.IntegerField(blank=True, null=True)  # ✅ Allow nulls
 
     relationship_score = models.IntegerField(
-        choices=[(i, i) for i in range(1, 6)],
-        default=None, blank=True, null=True  # ✅ Allow nulls, default is None
+        choices=[(i, i) for i in range(0, 6)],  # ✅ Allow 0 as a choice
+        default=0,  # ✅ Ensure the default is 0
+        blank=True,
+        null=True
     )
 
     def __str__(self):
