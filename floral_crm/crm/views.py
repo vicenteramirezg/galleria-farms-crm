@@ -435,7 +435,17 @@ def add_contact(request):
         if form.is_valid():
             contact = form.save(commit=False)
             contact.phone = form.cleaned_data['phone']  # ✅ Ensure correct phone formatting
-            contact.customer = form.cleaned_data['customer']  # ✅ Always assign selected customer
+
+            # 🚀 **Make sure the customer is properly assigned**
+            if customer:  # If coming from a customer page, assign that customer
+                contact.customer = customer
+            elif "customer" in form.cleaned_data and form.cleaned_data["customer"]:
+                contact.customer = form.cleaned_data["customer"]
+            else:
+                # ❌ If no customer is assigned, return an error
+                form.add_error("customer", "This field is required.")
+                return render(request, "crm/add_contact.html", {"form": form, "customer": customer})
+
             contact.save()
             return redirect("crm:customer_detail", customer_id=contact.customer.id)  # ✅ Redirect to customer page
     else:

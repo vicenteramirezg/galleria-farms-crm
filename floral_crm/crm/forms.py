@@ -96,7 +96,7 @@ class ContactForm(forms.ModelForm):
         # ✅ Check if the form is initialized with a specific customer
         if "initial" in kwargs and "customer" in kwargs["initial"]:
             self.fields["customer"].initial = kwargs["initial"]["customer"]
-            self.fields["customer"].disabled = True  # 🔒 Lock customer selection when adding from customer profile
+            self.fields["customer"].widget.attrs["readonly"] = True  # 🛠 Make it readonly instead of disabled (ensures submission)
 
         # ✅ Pre-fill existing values if available
         if self.instance and self.instance.pk:
