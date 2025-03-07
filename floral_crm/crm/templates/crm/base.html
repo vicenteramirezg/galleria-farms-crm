@@ -10,16 +10,26 @@
     <link rel="shortcut icon" href="{% static 'img/favicon.ico' %}">
     <title>{% block title %}Galleria Farms CRM{% endblock %}</title>
 
-    <!-- Open Graph meta tags for better social sharing -->
+    <!-- Open Graph for Microsoft Teams, Facebook, WhatsApp -->
     <meta property="og:title" content="Galleria Farms CRM">
     <meta property="og:description" content="A modern CRM for Galleria Farms. Track customers, contacts, and sales seamlessly.">
     <meta property="og:image" content="https://crm.galleriafarms.com/static/img/logo_black.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
     <meta property="og:url" content="https://crm.galleriafarms.com">
     <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Galleria Farms CRM">
+    <meta property="og:locale" content="en_US">
+
+    <!-- Twitter Card for better sharing -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Galleria Farms CRM">
     <meta name="twitter:description" content="A modern CRM for Galleria Farms. Track customers, contacts, and sales seamlessly.">
     <meta name="twitter:image" content="https://crm.galleriafarms.com/static/img/logo_black.png">
+    <meta name="twitter:site" content="@galleriafarms"> <!-- If you have a Twitter handle -->
+
+    <!-- Microsoft Teams-specific -->
+    <meta name="msapplication-TileImage" content="https://crm.galleriafarms.com/static/img/logo_black.png">
     
     <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
