@@ -358,8 +358,15 @@ def add_customer(request):
 
 @login_required
 def customer_list(request):
-    """ Fetch customers, group them by department, and order them alphabetically """
-    customers = Customer.objects.filter(salesperson=request.user.salesperson).order_by('department', 'name')
+    """ Fetch customers based on user role:
+        - Executives see all customers.
+        - Salespersons see only their assigned customers.
+    """
+
+    if request.user.profile.role == "Executive":
+        customers = Customer.objects.all()  # Executives see all customers
+    else:
+        customers = Customer.objects.filter(salesperson=request.user.salesperson)  # Salespersons see only their own
 
     # Group customers by department
     grouped_customers = defaultdict(list)
