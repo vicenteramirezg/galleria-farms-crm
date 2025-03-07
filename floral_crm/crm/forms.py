@@ -16,26 +16,33 @@ class CustomerForm(forms.ModelForm):
         user = kwargs.pop('user', None)  # Get the logged-in user
         super().__init__(*args, **kwargs)
 
-        # ✅ If the user is an Executive, allow them to assign a salesperson
-        if user and user.profile.role == "Executive":
-            self.fields['salesperson'] = forms.ModelChoiceField(
-                queryset=Salesperson.objects.all(),
-                required=True,
-                label="Assign Salesperson"
-            )
+        if user and hasattr(user, "profile"):
+            if user.profile.role == "Executive":
+                # ✅ Executives can assign a salesperson
+                self.fields['salesperson'] = forms.ModelChoiceField(
+                    queryset=Salesperson.objects.all(),
+                    required=True,
+                    label="Assign Salesperson"
+                )
 
-            # ✅ Prefill the salesperson field with the current assigned salesperson
-            if self.instance.pk and self.instance.salesperson:
-                self.fields['salesperson'].initial = self.instance.salesperson  # ✅ Prefill with existing salesperson
+                # ✅ Prefill the salesperson field if editing an existing customer
+                if self.instance.pk and self.instance.salesperson:
+                    self.fields['salesperson'].initial = self.instance.salesperson
 
-        # 🚫 Salespersons should NOT edit the assigned Salesperson field
-        elif user and user.profile.role == "Salesperson":
-            self.fields['salesperson'] = forms.ModelChoiceField(
-                queryset=Salesperson.objects.filter(id=self.instance.salesperson.id),  # Restrict to current salesperson
-                required=False,
-                label="Salesperson",
-                widget=forms.Select(attrs={'readonly': 'readonly', 'disabled': 'disabled'})  # Prevent modifications
-            )
+            elif user.profile.role == "Salesperson":
+                # 🚫 Salespersons should NOT modify their assigned salesperson
+                salesperson_queryset = Salesperson.objects.filter(user=user)
+
+                # ✅ Only set salesperson if the instance exists
+                salesperson_initial = self.instance.salesperson if self.instance.pk else user.salesperson
+
+                self.fields['salesperson'] = forms.ModelChoiceField(
+                    queryset=salesperson_queryset,
+                    initial=salesperson_initial,
+                    required=False,
+                    label="Salesperson",
+                    widget=forms.Select(attrs={'readonly': 'readonly', 'disabled': 'disabled'})  # Prevent modifications
+                )
 
     def clean_salesperson(self):
         """ Ensure Salespeople cannot modify the assigned salesperson. """
