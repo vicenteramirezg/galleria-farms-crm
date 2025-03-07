@@ -8,7 +8,16 @@
 
     <!-- Add Contact Button -->
     <div class="text-center mb-4">
-        <a href="{% url 'crm:add_contact' %}" class="btn btn-primary btn-lg">Add Contact</a>
+        <a href="{% url 'crm:add_contact' %}" class="btn btn-primary btn-lg">
+            <i class="fas fa-user-plus"></i> Add Contact
+        </a>
+    </div>
+
+    <!-- Add Contact Button -->
+    <div class="text-center mt-4">
+        <a href="{% url 'crm:add_contact' %}?customer_id={{ customer.id }}" class="btn btn-primary btn-lg">
+            <i class="fas fa-user-plus"></i> Add Contact
+        </a>
     </div>
 
     <!-- Group Contacts by Department & Then by Customer -->

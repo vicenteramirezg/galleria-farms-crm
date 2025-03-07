@@ -231,9 +231,14 @@ class ContactUpdateView(LoginRequiredMixin, UpdateView):
         logger.error(f"FORM INVALID ERRORS: {form.errors}")  # Debugging
         return super().form_invalid(form)
 
+import csv
+from django.http import HttpResponse
+from django.contrib.auth.decorators import login_required
+from .models import Contact
+
 @login_required
 def export_contacts(request):
-    """ Exports contacts into a CSV file with additional fields: Birthday & Salesperson """
+    """ Exports contacts into a CSV file with additional fields: Birthday (Month & Day) & Salesperson """
 
     # Get contacts associated with the logged-in salesperson
     contacts = Contact.objects.filter(customer__salesperson=request.user.salesperson)
@@ -244,17 +249,18 @@ def export_contacts(request):
 
     # Set up the CSV writer
     writer = csv.writer(response)
-    writer.writerow(['Name', 'Phone', 'Email', 'Customer', 'Relationship Score', 'Birthday', 'Salesperson'])
+    writer.writerow(['Name', 'Phone', 'Email', 'Customer', 'Relationship Score', 'Birthday Month', 'Birthday Day', 'Salesperson'])
 
     # Write contact data to CSV
     for contact in contacts:
         writer.writerow([
             contact.name,
-            contact.phone,
-            contact.email,
+            contact.phone if contact.phone else "N/A",
+            contact.email if contact.email else "N/A",
             contact.customer.name if contact.customer else "N/A",  # Handle missing customer
             contact.relationship_score,
-            contact.birthday.strftime('%Y-%m-%d') if contact.birthday else "Not provided",  # Format birthday
+            contact.get_birthday_month_display() if contact.birthday_month else "Not provided",  # Fetch month name
+            contact.birthday_day if contact.birthday_day else "Not provided",  # Fetch day
             contact.customer.salesperson.user.get_full_name() if contact.customer and contact.customer.salesperson else "N/A"  # Fetch salesperson's name
         ])
 
