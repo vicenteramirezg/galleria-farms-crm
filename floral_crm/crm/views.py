@@ -85,22 +85,29 @@ MONTH_NAMES = {
 
 @login_required
 def dashboard(request):
-    """ Generates summary metrics for the salesperson's or executive's customers. """
-
+    """ Generates summary metrics based on the user's role:
+        - Executives see all customers & contacts.
+        - Managers see only customers & contacts within their department.
+        - Salespeople see only their assigned customers & contacts.
+    """
     user = request.user
     salesperson = getattr(user, 'salesperson', None)
 
-    # Executives see all customers, Salespeople see their own customers
+    # Role-based filtering logic
     if user.profile.role == Role.EXECUTIVE:
-        customers = Customer.objects.prefetch_related("contacts")
-    else:
-        customers = Customer.objects.filter(salesperson=salesperson).prefetch_related("contacts")
+        customers = Customer.objects.prefetch_related("contacts")  # ✅ Executives see everything
+
+    elif "Manager" in user.profile.role:
+        department_name = user.profile.role.replace("Manager - ", "").lower()
+        customers = Customer.objects.filter(department=department_name).prefetch_related("contacts")  # ✅ Managers see their department's data
+
+    else:  # Salesperson role
+        customers = Customer.objects.filter(salesperson=salesperson).prefetch_related("contacts")  # ✅ Salespeople see only their assigned customers
 
     # Calculate key statistics
     total_sales = customers.aggregate(Sum("estimated_yearly_sales"))["estimated_yearly_sales__sum"] or 0
     total_contacts = Contact.objects.filter(customer__in=customers).count()
-    avg_relationship_score = Contact.objects.filter(customer__in=customers) \
-                                            .aggregate(Avg("relationship_score"))["relationship_score__avg"] or 0
+    avg_relationship_score = Contact.objects.filter(customer__in=customers).aggregate(Avg("relationship_score"))["relationship_score__avg"] or 0
 
     # Prepare data for top customers
     top_customers = customers.order_by("-estimated_yearly_sales")[:5]  # Top 5 by sales
@@ -115,7 +122,7 @@ def dashboard(request):
             "name": customer.name,
             "sales": customer.estimated_yearly_sales,
             "num_contacts": num_contacts,
-            "avg_score": avg_score
+            "avg_score": round(avg_score, 2) if avg_score else "N/A"
         })
 
     # ✅ Fix upcoming birthdays filtering logic
@@ -147,9 +154,9 @@ def dashboard(request):
 
     return render(request, "crm/dashboard.html", {
         "customers": customer_data,
-        "total_sales": total_sales,
+        "total_sales": f"${total_sales:,.0f}",  # Format with commas
         "total_contacts": total_contacts,
-        "avg_relationship_score": round(avg_relationship_score, 2),
+        "avg_relationship_score": round(avg_relationship_score, 2) if avg_relationship_score else "N/A",
         "top_customers": top_customers,
         "upcoming_birthdays": upcoming_birthdays
     })
