@@ -125,8 +125,14 @@ class SignupForm(UserCreationForm):
 
     def save(self, commit=True):
         user = super().save(commit=False)
-        user.salesperson.phone = self.cleaned_data['phone']  # Store formatted phone number
         if commit:
-            user.save()
-            user.salesperson.save()
+            user.save()  # Save user first so signal can trigger
+
+            # ✅ Wait for signal to create Salesperson, then update the phone
+            from crm.models import Salesperson  # Import inside method to prevent circular import
+            salesperson = getattr(user, "salesperson", None)  # Get Salesperson if it exists
+            if salesperson:  # Update phone only if Salesperson exists
+                salesperson.phone = self.cleaned_data["phone"]
+                salesperson.save()
+
         return user

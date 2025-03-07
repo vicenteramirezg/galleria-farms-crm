@@ -7,13 +7,6 @@
     <h1 class="text-center display-4 font-weight-bold mb-4">Contacts</h1>
 
     <!-- Add Contact Button -->
-    <div class="text-center mb-4">
-        <a href="{% url 'crm:add_contact' %}" class="btn btn-primary btn-lg">
-            <i class="fas fa-user-plus"></i> Add Contact
-        </a>
-    </div>
-
-    <!-- Add Contact Button -->
     <div class="text-center mt-4">
         <a href="{% url 'crm:add_contact' %}?customer_id={{ customer.id }}" class="btn btn-primary btn-lg">
             <i class="fas fa-user-plus"></i> Add Contact
