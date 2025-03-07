@@ -4,7 +4,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from django.urls import reverse, reverse_lazy
-from django.http import HttpResponse, HttpResponseNotAllowed
+from django.http import HttpResponse, HttpResponseNotAllowed, HttpResponseRedirect
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views import View
 from django.views.generic import ListView, UpdateView, CreateView, DetailView
@@ -589,13 +589,21 @@ def add_contact(request):
             contact.phone = form.cleaned_data['phone']  # ✅ Ensure correct phone formatting
 
             # 🚀 **Ensure the customer is assigned properly**
-            if customer:
-                contact.customer = customer
-            elif "customer" in form.cleaned_data and form.cleaned_data["customer"]:
-                contact.customer = form.cleaned_data["customer"]
-            else:
-                form.add_error("customer", "This field is required.")
-                return render(request, "crm/add_contact.html", {"form": form, "customer": customer})
+            if request.user.profile.role == "Executive":
+                contact.customer = form.cleaned_data["customer"]  # ✅ Executives can assign any customer
+            elif request.user.profile.role == "Salesperson":
+                if customer and customer.salesperson == request.user.salesperson:
+                    contact.customer = customer  # ✅ Assign only if valid
+                else:
+                    messages.error(request, "You cannot add a contact to this customer.")
+                    return redirect("crm:contact_list")  # 🚫 Prevent unauthorized assignment
+            elif "Manager" in request.user.profile.role:
+                department = request.user.profile.role.replace("Manager - ", "")
+                if customer and customer.department == department:
+                    contact.customer = customer  # ✅ Managers can assign contacts only within their department
+                else:
+                    messages.error(request, "You cannot add a contact to this customer.")
+                    return redirect("crm:contact_list")
 
             contact.save()
             logger.info(f"✅ Contact Created: {contact.name} - Redirecting to customer {contact.customer.id}")
@@ -603,6 +611,7 @@ def add_contact(request):
             # 🚀 **Fixed redirect**
             return HttpResponseRedirect(reverse("crm:customer_detail", args=[contact.customer.id]))  # ✅ Correct way to redirect
     else:
+        # ✅ If customer exists, pre-fill the field. If not, allow selection.
         form = ContactForm(user=request.user, initial={"customer": customer} if customer else {})
 
     return render(request, "crm/add_contact.html", {"form": form, "customer": customer})

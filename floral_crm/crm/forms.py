@@ -80,7 +80,7 @@ class ContactForm(forms.ModelForm):
         fields = ['customer', 'name', 'phone', 'email', 'address', 'birthday_month', 'birthday_day', 'relationship_score']
 
     def __init__(self, *args, **kwargs):
-        user = kwargs.pop('user', None)  # ✅ Get logged-in user
+        user = kwargs.pop('user', None)  # ✅ Get the logged-in user
         super().__init__(*args, **kwargs)
 
         # ✅ Use the choices from the model
@@ -88,27 +88,24 @@ class ContactForm(forms.ModelForm):
         self.fields["birthday_day"].widget = forms.NumberInput(attrs={"type": "number", "min": 1, "max": 31})
 
         # ✅ Ensure correct customer filtering
-        if user and hasattr(user, 'profile') and user.profile.role == "Salesperson":
-            self.fields["customer"].queryset = Customer.objects.filter(salesperson=user.salesperson)
-        else:
-            self.fields["customer"].queryset = Customer.objects.all()
+        if user and hasattr(user, 'profile'):
+            if user.profile.role == "Executive":
+                self.fields["customer"].queryset = Customer.objects.all()  # ✅ Executives see all customers
+            elif user.profile.role == "Salesperson":
+                self.fields["customer"].queryset = Customer.objects.filter(salesperson=user.salesperson)  # ✅ Salespersons see only their customers
+            elif "Manager" in user.profile.role:
+                department = user.profile.role.replace("Manager - ", "")  # Extract department
+                self.fields["customer"].queryset = Customer.objects.filter(department__iexact=department)  # ✅ Managers see customers in their department
 
-        # ✅ Check if the form is initialized with a specific customer
-        if "initial" in kwargs and "customer" in kwargs["initial"]:
-            self.fields["customer"].initial = kwargs["initial"]["customer"]
-            self.fields["customer"].widget.attrs["readonly"] = True  # 🛠 Make it readonly instead of disabled (ensures submission)
-
-        # ✅ Pre-fill existing values if available
+        # ✅ If editing an existing contact, keep customer selection locked
         if self.instance and self.instance.pk:
-            self.fields["birthday_month"].initial = self.instance.birthday_month
-            self.fields["birthday_day"].initial = self.instance.birthday_day
             self.fields["customer"].disabled = True  # 🔒 Keep customer non-editable when editing a contact
 
-        # Apply Bootstrap classes & center alignment
+        # ✅ Apply Bootstrap styling
         for field_name, field in self.fields.items():
             field.widget.attrs.update({"class": "form-control text-center"})  # Centers text inside fields
 
-        # Specifically control width for Address field
+        # ✅ Specifically control width for Address field
         self.fields["address"].widget.attrs.update({"style": "max-width: 400px; margin: 0 auto; max-height: 100px"})
         
 class SignupForm(UserCreationForm):
