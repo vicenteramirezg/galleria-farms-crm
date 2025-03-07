@@ -154,7 +154,7 @@ def dashboard(request):
 
     return render(request, "crm/dashboard.html", {
         "customers": customer_data,
-        "total_sales": f"${total_sales:,.0f}",  # Format with commas
+        "total_sales": f"{total_sales:,.0f}",  # Format with commas
         "total_contacts": total_contacts,
         "avg_relationship_score": round(avg_relationship_score, 2) if avg_relationship_score else "N/A",
         "top_customers": top_customers,
@@ -665,9 +665,24 @@ def executive_required(view_func):
 @executive_required  # ✅ Ensures only Executives can access this page
 def executive_dashboard(request):
     """ View for Executives to see an overview of all users and their performance. """
+    
+    # Retrieve all users with their role
+    users = Profile.objects.select_related("user").all().order_by("user__username")
 
-    # Retrieve all users with their role, sorted alphabetically by full name
-    users = Profile.objects.select_related("user").order_by("user__first_name", "user__last_name")
+    # Handle role updates if a POST request is made
+    if request.method == "POST":
+        user_id = request.POST.get("user_id")
+        new_role = request.POST.get("new_role")
+
+        if user_id and new_role:
+            user_to_update = get_object_or_404(User, id=user_id)
+            user_to_update.profile.role = new_role
+            user_to_update.profile.save()
+            messages.success(request, f"{user_to_update.get_full_name()}'s role updated to {new_role}!")
+            return redirect("crm:executive_dashboard")
+
+    # Fetch available roles (only Manager and Executive)
+    available_roles = [Role.EXECUTIVE, Role.MANAGER_MASS_MARKET, Role.MANAGER_MM2, Role.MANAGER_ECOMMERCE, Role.MANAGER_WHOLESALE]
 
     # Build a list with additional stats
     user_data = []
@@ -680,19 +695,24 @@ def executive_dashboard(request):
             total_sales = Customer.objects.filter(salesperson=salesperson).aggregate(Sum("estimated_yearly_sales"))["estimated_yearly_sales__sum"] or 0
             avg_relationship_score = Contact.objects.filter(customer__salesperson=salesperson).aggregate(Avg("relationship_score"))["relationship_score__avg"] or 0
         else:
-            total_customers = total_contacts = total_sales = avg_relationship_score = "N/A"  # Executives may not have sales data
+            total_customers = total_contacts = total_sales = avg_relationship_score = "N/A"
 
         user_data.append({
+            "id": profile.user.id,
             "username": profile.user.username,
             "full_name": profile.user.get_full_name(),
             "role": profile.role,
             "total_customers": total_customers,
             "total_contacts": total_contacts,
             "total_sales": total_sales,
-            "avg_relationship_score": round(avg_relationship_score, 2) if avg_relationship_score != "N/A" else "N/A"
+            "avg_relationship_score": round(avg_relationship_score, 2) if avg_relationship_score != "N/A" else "N/A",
+            "can_edit_role": profile.role == Role.SALESPERSON,  # ✅ Only Salesperson roles can be changed
         })
 
-    return render(request, "crm/executive_dashboard.html", {"user_data": user_data})
+    return render(request, "crm/executive_dashboard.html", {
+        "user_data": user_data,
+        "available_roles": available_roles
+    })
 
 @login_required
 def manager_dashboard(request):
