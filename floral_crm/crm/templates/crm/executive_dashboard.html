@@ -27,10 +27,13 @@
                     <td>{{ user.username }}</td>
                     <td>{{ user.full_name }}</td>
                     <td>
-                        <span class="badge {% if user.role == 'Executive' %}bg-danger{% else %}bg-primary{% endif %}">
+                        <span class="badge 
+                            {% if user.role == 'Executive' %}bg-danger
+                            {% elif 'Manager' in user.role %}bg-success
+                            {% else %}bg-primary{% endif %}">
                             {{ user.role }}
                         </span>
-                    </td>
+                    </td>                    
                     <td>{{ user.total_customers }}</td>
                     <td>{{ user.total_contacts }}</td>
                     <td>${{ user.total_sales|default:"0"|intcomma }}</td>  <!-- ✅ Added intcomma for formatting -->

@@ -60,7 +60,10 @@
             <div class="d-flex align-items-center text-white me-3">
                 <span class="fw">Hello, {{ user.get_full_name }}</span>
                 {% if user.profile.role %}
-                    <span class="badge {% if user.profile.role == 'Executive' %}bg-danger{% else %}bg-primary{% endif %} ms-2">
+                    <span class="badge 
+                        {% if user.profile.role == 'Executive' %}bg-danger
+                        {% elif 'Manager' in user.profile.role %}bg-success
+                        {% else %}bg-primary{% endif %} ms-2">
                         {{ user.profile.role }}
                     </span>
                 {% endif %}

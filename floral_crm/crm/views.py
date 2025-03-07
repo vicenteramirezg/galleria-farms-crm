@@ -165,24 +165,57 @@ class CustomerUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         Ensure the correct access:
         - Executives can edit all customers.
         - Salespersons can only edit their own customers.
+        - Managers can edit customers only under their assigned department.
         """
         user = self.request.user
         customer = self.get_object()
 
         if user.profile.role == "Executive":
             return True  # ✅ Executives can edit any customer
+        elif "Manager" in user.profile.role:
+            # ✅ Convert Manager role to department
+            role_to_department = {
+                "Manager - Mass Market": Customer.MASS_MARKET,
+                "Manager - MM2": Customer.MM2,
+                "Manager - Ecommerce": Customer.ECOMMERCE,
+                "Manager - Wholesale": Customer.WHOLESALE,
+            }
+            department = role_to_department.get(user.profile.role, None)
+
+            # ✅ Allow Managers to edit customers only in their department
+            if department and customer.department == department:
+                return True
         elif user.profile.role == "Salesperson":
             return customer.salesperson == user.salesperson  # ✅ Salespersons can only edit their own customers
-        
+
         return False  # 🚫 Block unauthorized users
 
     def get_queryset(self):
-        """ Return only customers the user is allowed to edit. """
+        """ Ensure the user can only retrieve customers they are allowed to edit. """
         user = self.request.user
 
         if user.profile.role == "Executive":
-            return Customer.objects.all()  # ✅ Executives can edit all customers
-        return Customer.objects.filter(salesperson=user.salesperson)  # ✅ Salespersons can only edit their own
+            queryset = Customer.objects.all()  # ✅ Executives see all customers
+        elif "Manager" in user.profile.role:
+            # Convert role to correct department key
+            role_to_department = {
+                "Manager - Mass Market": Customer.MASS_MARKET,
+                "Manager - MM2": Customer.MM2,
+                "Manager - Ecommerce": Customer.ECOMMERCE,
+                "Manager - Wholesale": Customer.WHOLESALE,
+            }
+            department = role_to_department.get(user.profile.role, None)
+            if department:
+                queryset = Customer.objects.filter(department=department)  # ✅ Managers see only their department's customers
+            else:
+                queryset = Customer.objects.none()  # 🚫 If no valid department, deny access
+        else:
+            queryset = Customer.objects.filter(salesperson=user.salesperson)  # ✅ Salespersons see only their own customers
+
+        # 🛑 Debugging
+        print(f"🔍 User: {user}, Role: {user.profile.role}, Allowed Customers: {queryset}")
+
+        return queryset
 
     def get_form_kwargs(self):
         """ Pass the logged-in user to the form to ensure proper salesperson handling. """
@@ -193,8 +226,7 @@ class CustomerUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     def form_valid(self, form):
         """ 
         - Ensure Salesperson remains unchanged if edited by a Salesperson.
-        - Allow Executives to modify the assigned Salesperson.
-        - Log updates for debugging.
+        - Allow Executives and Managers to modify the assigned Salesperson.
         """
         user = self.request.user
 
@@ -202,14 +234,13 @@ class CustomerUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         if user.profile.role == "Salesperson":
             form.instance.salesperson = self.object.salesperson  # ✅ Keep original salesperson
 
-        # 🛑 Log the raw input data before saving
         logger.info(f"🔹 Form Data Before Saving: {form.cleaned_data}")
 
         response = super().form_valid(form)
 
         # 🔥 Fetch updated customer from the database to verify changes
         updated_customer = get_object_or_404(Customer, id=form.instance.id)
-        logger.info(f"✅ Database After Update: {updated_customer.name}, Sales: {updated_customer.estimated_yearly_sales}")
+        logger.info(f"✅ Updated Customer: {updated_customer.name}, Sales: {updated_customer.estimated_yearly_sales}")
 
         messages.success(self.request, "Customer details updated successfully!")  # ✅ Show success message
 
@@ -221,24 +252,77 @@ class CustomerUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         messages.error(self.request, "There were errors in your form submission. Please correct them.")
         return super().form_invalid(form)
 
-class ContactUpdateView(LoginRequiredMixin, UpdateView):
+
+class ContactUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Contact
-    form_class = ContactForm  
-    template_name = 'crm/contact_form.html'
-    success_url = reverse_lazy('crm:contact_list')
+    form_class = ContactForm
+    template_name = "crm/contact_form.html"
+    success_url = reverse_lazy("crm:contact_list")
+
+    def test_func(self):
+        """ 
+        Ensure the correct access:
+        - Executives can edit all contacts.
+        - Managers can edit contacts within their department.
+        - Salespersons can only edit their own customers' contacts.
+        """
+        user = self.request.user
+        contact = self.get_object()
+
+        if user.profile.role == "Executive":
+            return True  # ✅ Executives can edit any contact
+        elif "Manager" in user.profile.role:
+            # ✅ Convert Manager role to department
+            role_to_department = {
+                "Manager - Mass Market": Customer.MASS_MARKET,
+                "Manager - MM2": Customer.MM2,
+                "Manager - Ecommerce": Customer.ECOMMERCE,
+                "Manager - Wholesale": Customer.WHOLESALE,
+            }
+            department = role_to_department.get(user.profile.role, None)
+
+            # ✅ Allow Managers to edit contacts only within their department
+            if department and contact.customer.department == department:
+                return True
+        elif user.profile.role == "Salesperson":
+            return contact.customer.salesperson == user.salesperson  # ✅ Salespersons edit only their own customers' contacts
+
+        return False  # 🚫 Block unauthorized users
 
     def get_queryset(self):
-        """ Ensure the user can only edit their own contacts. Executives can edit all contacts. """
-        if self.request.user.profile.role == "Executive":
-            return Contact.objects.all()  # ✅ Executives see all contacts
-        return Contact.objects.filter(customer__salesperson=self.request.user.salesperson)
+        """ Ensure the user can only retrieve contacts they are allowed to edit. """
+        user = self.request.user
+
+        if user.profile.role == "Executive":
+            queryset = Contact.objects.all()  # ✅ Executives see all contacts
+        elif "Manager" in user.profile.role:
+            # Convert role to correct department key
+            role_to_department = {
+                "Manager - Mass Market": Customer.MASS_MARKET,
+                "Manager - MM2": Customer.MM2,
+                "Manager - Ecommerce": Customer.ECOMMERCE,
+                "Manager - Wholesale": Customer.WHOLESALE,
+            }
+            department = role_to_department.get(user.profile.role, None)
+            if department:
+                queryset = Contact.objects.filter(customer__department=department)  # ✅ Managers see only their department's contacts
+            else:
+                queryset = Contact.objects.none()  # 🚫 If no valid department, deny access
+        else:
+            queryset = Contact.objects.filter(customer__salesperson=user.salesperson)  # ✅ Salespersons see only their own customers' contacts
+
+        # 🛑 Debugging
+        print(f"🔍 User: {user}, Role: {user.profile.role}, Allowed Contacts: {queryset}")
+
+        return queryset
 
     def form_valid(self, form):
         """ Ensure the customer remains unchanged when saving the contact """
         contact = form.save(commit=False)
         contact.customer = self.get_object().customer  # ✅ Keep the original customer
-        contact.address = form.cleaned_data["address"]  # ✅ Explicitly save address (just in case)
+        contact.address = form.cleaned_data["address"]  # ✅ Explicitly save address
         contact.save()
+        messages.success(self.request, "Contact details updated successfully!")  # ✅ Show success message
         return super().form_valid(form)
 
     def form_invalid(self, form):
@@ -246,11 +330,6 @@ class ContactUpdateView(LoginRequiredMixin, UpdateView):
         messages.error(self.request, "There were errors updating the contact.")
         logger.error(f"FORM INVALID ERRORS: {form.errors}")  # Debugging
         return super().form_invalid(form)
-
-import csv
-from django.http import HttpResponse
-from django.contrib.auth.decorators import login_required
-from .models import Contact
 
 @login_required
 def export_contacts(request):
@@ -373,56 +452,84 @@ def customer_list(request):
     """ Fetch customers based on user role:
         - Executives see all customers.
         - Salespersons see only their assigned customers.
+        - Managers see only customers within their department.
     """
 
-    if request.user.profile.role == "Executive":
-        customers = Customer.objects.all()  # Executives see all customers
-    else:
-        customers = Customer.objects.filter(salesperson=request.user.salesperson).order_by("department", "name")  # Salespersons see only their own
+    user = request.user
 
-    # Group customers by department
+    if user.profile.role == Role.EXECUTIVE:
+        customers = Customer.objects.all()  # ✅ Executives see all customers
+    elif user.profile.role == Role.SALESPERSON:
+        customers = Customer.objects.filter(salesperson=user.salesperson)  # ✅ Salespersons see only their own
+    else:
+        # ✅ Managers see only customers in their assigned department
+        department_mapping = {
+            Role.MANAGER_MASS_MARKET: Customer.MASS_MARKET,
+            Role.MANAGER_MM2: Customer.MM2,
+            Role.MANAGER_ECOMMERCE: Customer.ECOMMERCE,
+            Role.MANAGER_WHOLESALE: Customer.WHOLESALE,
+        }
+        department = department_mapping.get(user.profile.role)
+
+        if department:
+            customers = Customer.objects.filter(department=department)
+        else:
+            customers = Customer.objects.none()  # 🚫 No access if no valid department
+
+    # ✅ Group customers by department & order alphabetically
     grouped_customers = defaultdict(list)
-    for customer in customers:
+    for customer in customers.order_by("department", "name"):
         grouped_customers[customer.department].append(customer)
 
-    return render(request, 'crm/customer_list.html', {'grouped_customers': dict(grouped_customers)})
+    return render(request, "crm/customer_list.html", {"grouped_customers": dict(grouped_customers)})
 
 @login_required
 def contact_list(request):
-    """ Groups contacts by department → customer → ordered contacts """
+    """ Groups contacts by department → customer → ordered contacts based on user roles. """
 
-    # ✅ Executives see all contacts; Salespersons see only their own
-    if request.user.profile.role == "Executive":
+    user = request.user
+
+    # ✅ Executives see all contacts
+    if user.profile.role == Role.EXECUTIVE:
         customers = Customer.objects.prefetch_related("contacts").order_by("department", "name")
-    else:
-        customers = Customer.objects.filter(salesperson=request.user.salesperson) \
+
+    # ✅ Salespersons see only their assigned customers' contacts
+    elif user.profile.role == Role.SALESPERSON:
+        customers = Customer.objects.filter(salesperson=user.salesperson) \
                                     .prefetch_related("contacts") \
                                     .order_by("department", "name")
+
+    # ✅ Managers see only customers within their assigned department
+    else:
+        department_mapping = {
+            Role.MANAGER_MASS_MARKET: Customer.MASS_MARKET,
+            Role.MANAGER_MM2: Customer.MM2,
+            Role.MANAGER_ECOMMERCE: Customer.ECOMMERCE,
+            Role.MANAGER_WHOLESALE: Customer.WHOLESALE,
+        }
+        department = department_mapping.get(user.profile.role)
+
+        if department:
+            customers = Customer.objects.filter(department=department).prefetch_related("contacts").order_by("department", "name")
+        else:
+            customers = Customer.objects.none()  # 🚫 No access if no valid department
 
     grouped_contacts = defaultdict(list)
 
     # ✅ Organize customers under their respective departments
     for customer in customers:
-        # ✅ Order contacts alphabetically within each customer
-        sorted_contacts = sorted(customer.contacts.all(), key=lambda contact: contact.name.lower())
+        sorted_contacts = sorted(customer.contacts.all(), key=lambda contact: contact.name.lower())  # Alphabetical sorting
 
         for contact in sorted_contacts:
-            # Ensure birthday_month is an integer
+            # ✅ Format birthday properly
             birthday_month = int(contact.birthday_month) if contact.birthday_month else None
             birthday_day = contact.birthday_day
 
-            # Generate a clean birthday format
-            if birthday_month and birthday_day:
-                clean_birthday = f"{MONTH_NAMES.get(birthday_month, 'Unknown')}, {birthday_day}"
-            else:
-                clean_birthday = "Not provided"
+            clean_birthday = f"{MONTH_NAMES.get(birthday_month, 'Unknown')}, {birthday_day}" if birthday_month and birthday_day else "Not provided"
+            contact.clean_birthday = clean_birthday  # Attach formatted birthday
 
-            # Attach clean_birthday to the contact
-            contact.clean_birthday = clean_birthday
-
-        # ✅ Store sorted contacts for the customer
-        customer.sorted_contacts = sorted_contacts
-        grouped_contacts[customer.department].append(customer)
+        customer.sorted_contacts = sorted_contacts  # Store sorted contacts
+        grouped_contacts[customer.department].append(customer)  # Group by department
 
     return render(request, "crm/contact_list.html", {"grouped_contacts": dict(grouped_contacts)})
 
@@ -432,17 +539,32 @@ class ContactListView(LoginRequiredMixin, ListView):
     context_object_name = "contacts"  # Name used for the context in the template
 
     def get_queryset(self):
-        """ Executives see all contacts, Salespersons see only their own """
-        if self.request.user.profile.role == "Executive":
-            return Contact.objects.all()  # ✅ Executives see everything
-        return Contact.objects.filter(customer__salesperson=self.request.user.salesperson)  # ✅ Salesperson filter
+        """ Fetch contacts based on user role:
+            - Executives see all contacts.
+            - Salespersons see only contacts from their assigned customers.
+            - Managers see only contacts from customers in their department.
+        """
+        user = self.request.user
 
+        if user.profile.role == Role.EXECUTIVE:
+            return Contact.objects.all().order_by("name")  # ✅ Executives see all contacts
 
-from django.http import HttpResponseRedirect
-from django.urls import reverse
-import logging
+        if user.profile.role == Role.SALESPERSON:
+            return Contact.objects.filter(customer__salesperson=user.salesperson).order_by("name")  # ✅ Salespersons filter
 
-logger = logging.getLogger(__name__)
+        # ✅ Managers see only contacts within their department
+        department_mapping = {
+            Role.MANAGER_MASS_MARKET: Customer.MASS_MARKET,
+            Role.MANAGER_MM2: Customer.MM2,
+            Role.MANAGER_ECOMMERCE: Customer.ECOMMERCE,
+            Role.MANAGER_WHOLESALE: Customer.WHOLESALE,
+        }
+        department = department_mapping.get(user.profile.role)
+
+        if department:
+            return Contact.objects.filter(customer__department=department).order_by("name")  # ✅ Managers see their department's contacts
+
+        return Contact.objects.none()  # 🚫 No access if no valid department
 
 @login_required
 def add_contact(request):

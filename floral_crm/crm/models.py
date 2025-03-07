@@ -12,12 +12,16 @@ class BaseModel(models.Model):
         abstract = True  # Prevents Django from creating a separate table
 
 class Role(models.TextChoices):
-    SALESPERSON = 'Salesperson', 'Salesperson'
-    EXECUTIVE = 'Executive', 'Executive'
+    EXECUTIVE = "Executive", "Executive"
+    SALESPERSON = "Salesperson", "Salesperson"
+    MANAGER_MASS_MARKET = "Manager - Mass Market", "Manager - Mass Market"
+    MANAGER_MM2 = "Manager - MM2", "Manager - MM2"
+    MANAGER_ECOMMERCE = "Manager - Ecommerce", "Manager - Ecommerce"
+    MANAGER_WHOLESALE = "Manager - Wholesale", "Manager - Wholesale"
 
 class Profile(BaseModel):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    role = models.CharField(max_length=20, choices=Role.choices, default=Role.SALESPERSON)
+    role = models.CharField(max_length=30, choices=Role.choices, default=Role.SALESPERSON)
 
     def is_executive(self):
         return self.role == Role.EXECUTIVE
