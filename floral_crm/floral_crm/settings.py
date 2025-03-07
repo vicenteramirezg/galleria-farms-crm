@@ -108,13 +108,24 @@ TEMPLATES = [
 WSGI_APPLICATION = "floral_crm.wsgi.application"
 
 # ✅ Database Configuration
-DATABASES = {
-    "default": dj_database_url.config(
-        default=os.getenv("DATABASE_URL"),
-        conn_max_age=600,
-        ssl_require=True,  # Force SSL
-    )
-}
+# Detect if running locally or in production
+IS_PRODUCTION = os.getenv("RAILWAY_ENVIRONMENT", "development") == "production"
+
+if IS_PRODUCTION:
+    DATABASES = {
+        "default": dj_database_url.config(
+            default=os.getenv("DATABASE_URL"),
+            conn_max_age=600,
+            ssl_require=True,
+        )
+    }
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
 
 # ✅ Password Validation
 AUTH_PASSWORD_VALIDATORS = [
