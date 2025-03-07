@@ -1,0 +1,53 @@
+{% extends "crm/base.html" %}
+
+{% load humanize %}
+
+{% block title %}Executive Dashboard - CRM{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h1 class="text-center display-4 font-weight-bold">Executive Dashboard</h1>
+
+    <div class="table-responsive mt-4">
+        <table class="table table-bordered table-striped">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Username</th>
+                    <th>Full Name</th>
+                    <th>Role</th>
+                    <th>Total Customers</th>
+                    <th>Total Contacts</th>
+                    <th>Total Estimated Yearly Sales</th>
+                    <th>Average Relationship Score</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in user_data %}
+                <tr>
+                    <td>{{ user.username }}</td>
+                    <td>{{ user.full_name }}</td>
+                    <td>
+                        <span class="badge {% if user.role == 'Executive' %}bg-danger{% else %}bg-primary{% endif %}">
+                            {{ user.role }}
+                        </span>
+                    </td>
+                    <td>{{ user.total_customers }}</td>
+                    <td>{{ user.total_contacts }}</td>
+                    <td>${{ user.total_sales|default:"0"|intcomma }}</td>  <!-- ✅ Added intcomma for formatting -->
+                    <td>{{ user.avg_relationship_score|default:"N/A" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center">No users found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Back Button -->
+    <div class="text-center mt-4">
+        <a href="{% url 'home' %}" class="btn btn-secondary">Back to Home</a>
+    </div>
+</div>
+{% endblock %}

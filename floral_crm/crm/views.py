@@ -466,3 +466,44 @@ class CustomerDetailView(LoginRequiredMixin, DetailView):
             "avg_relationship_score": avg_relationship_score if avg_relationship_score else "No scores yet",
         })
         return context
+
+def executive_required(view_func):
+    """ Custom decorator to restrict access to Executives only. """
+    def _wrapped_view(request, *args, **kwargs):
+        if not request.user.is_authenticated or not hasattr(request.user, "profile") or request.user.profile.role != "Executive":
+            return render(request, "crm/403.html", status=403)  # Show 403 page if unauthorized
+        return view_func(request, *args, **kwargs)
+    return _wrapped_view
+
+@login_required
+@executive_required  # ✅ Ensures only Executives can access this page
+def executive_dashboard(request):
+    """ View for Executives to see an overview of all users and their performance. """
+
+    # Retrieve all users with their role
+    users = Profile.objects.select_related("user").all()
+
+    # Build a list with additional stats
+    user_data = []
+    for profile in users:
+        salesperson = getattr(profile.user, "salesperson", None)
+
+        if salesperson:
+            total_customers = Customer.objects.filter(salesperson=salesperson).count()
+            total_contacts = Contact.objects.filter(customer__salesperson=salesperson).count()
+            total_sales = Customer.objects.filter(salesperson=salesperson).aggregate(Sum("estimated_yearly_sales"))["estimated_yearly_sales__sum"] or 0
+            avg_relationship_score = Contact.objects.filter(customer__salesperson=salesperson).aggregate(Avg("relationship_score"))["relationship_score__avg"] or 0
+        else:
+            total_customers = total_contacts = total_sales = avg_relationship_score = "N/A"  # Executives may not have sales data
+
+        user_data.append({
+            "username": profile.user.username,
+            "full_name": profile.user.get_full_name(),
+            "role": profile.role,
+            "total_customers": total_customers,
+            "total_contacts": total_contacts,
+            "total_sales": total_sales,
+            "avg_relationship_score": round(avg_relationship_score, 2) if avg_relationship_score != "N/A" else "N/A"
+        })
+
+    return render(request, "crm/executive_dashboard.html", {"user_data": user_data})
