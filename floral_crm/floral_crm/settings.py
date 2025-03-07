@@ -24,7 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 IS_PRODUCTION = os.getenv("RAILWAY_ENVIRONMENT", "development") == "production"
 
 # ✅ Secret Key
-SECRET_KEY = os.getenv("SECRET_KEY", "default-secret-key")
+SECRET_KEY = os.getenv("SECRET_KEY")
 
 # ✅ Debug Mode (Should be False in production)
 DEBUG = os.getenv("DEBUG", "False") == "True"
@@ -161,13 +161,16 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 
 # ✅ SMTP Configuration
-EMAIL_HOST = os.getenv("EMAIL_HOST", "mail.smtp2go.com")  # SMTP2Go host
-EMAIL_PORT = int(os.getenv("EMAIL_PORT", 2525))  # 2525, 587, 25 (TLS) or 465 (SSL)
-EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True") == "True"  # Use TLS for security
-EMAIL_USE_SSL = os.getenv("EMAIL_USE_SSL", "False") == "True"  # Use SSL if using port 465
+EMAIL_HOST = os.getenv("EMAIL_HOST")  # SMTP2Go host
+EMAIL_PORT = int(os.getenv("EMAIL_PORT")  # 2525, 587, 25 (TLS) or 465 (SSL)
+EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS") == "True"  # Use TLS for security
+EMAIL_USE_SSL = os.getenv("EMAIL_USE_SSL") == "True"  # Use SSL if using port 465
 
-# ✅ Default "From" Email
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "noreply@galleriafarms.com")
+# ✅ Authentication (Replace with your email credentials)
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
+
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL")
 
 
 # ✅ Default Auto Field
