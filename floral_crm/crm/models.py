@@ -11,9 +11,23 @@ class BaseModel(models.Model):
     class Meta:
         abstract = True  # Prevents Django from creating a separate table
 
+class Role(models.TextChoices):
+    SALESPERSON = 'Salesperson', 'Salesperson'
+    EXECUTIVE = 'Executive', 'Executive'
+
+class Profile(BaseModel):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    role = models.CharField(max_length=20, choices=Role.choices, default=Role.SALESPERSON)
+
+    def is_executive(self):
+        return self.role == Role.EXECUTIVE
+
+    def __str__(self):
+        return f"{self.user.get_full_name()} - {self.role}"
+
 class Salesperson(BaseModel):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='salesperson')
-    phone = models.CharField(max_length=20, blank=True)
+    phone = models.CharField(max_length=20, blank=True)  # Store phone as a string
 
     def __str__(self):
         return f"{self.user.get_full_name()}"
@@ -41,6 +55,7 @@ class Customer(BaseModel):
     )
 
     def get_department_display(self):
+        """ Returns the human-readable department name instead of the stored value """
         return dict(self.DEPARTMENT_CHOICES).get(self.department, "No Department")
 
     def __str__(self):
