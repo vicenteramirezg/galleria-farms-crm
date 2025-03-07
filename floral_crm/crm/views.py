@@ -5,7 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from django.urls import reverse, reverse_lazy
 from django.http import HttpResponse, HttpResponseNotAllowed
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views import View
 from django.views.generic import ListView, UpdateView, CreateView, DetailView
 from django.contrib.auth import login, logout
@@ -154,32 +154,40 @@ def dashboard(request):
         "upcoming_birthdays": upcoming_birthdays
     })
 
-class CustomerUpdateView(LoginRequiredMixin, SalespersonAccessMixin, UpdateView):
+class CustomerUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Customer
     form_class = CustomerForm
-    template_name = 'crm/customer_form.html'
-    success_url = reverse_lazy('crm:customer_list')
+    template_name = "crm/customer_form.html"
+    success_url = reverse_lazy("crm:customer_list")
 
-    def get_queryset(self):
+    def test_func(self):
         """ 
         Ensure the correct access:
         - Executives can edit all customers.
         - Salespersons can only edit their own customers.
         """
         user = self.request.user
+        customer = self.get_object()
 
         if user.profile.role == "Executive":
-            queryset = Customer.objects.all()  # ✅ Executives see all customers
-        else:
-            queryset = Customer.objects.filter(salesperson=user.salesperson)  # ✅ Salespersons see only their own
+            return True  # ✅ Executives can edit any customer
+        elif user.profile.role == "Salesperson":
+            return customer.salesperson == user.salesperson  # ✅ Salespersons can only edit their own customers
+        
+        return False  # 🚫 Block unauthorized users
 
-        logger.info(f"CustomerEditView - Filtering customers for user {user}: {queryset}")
-        return queryset
+    def get_queryset(self):
+        """ Return only customers the user is allowed to edit. """
+        user = self.request.user
+
+        if user.profile.role == "Executive":
+            return Customer.objects.all()  # ✅ Executives can edit all customers
+        return Customer.objects.filter(salesperson=user.salesperson)  # ✅ Salespersons can only edit their own
 
     def get_form_kwargs(self):
         """ Pass the logged-in user to the form to ensure proper salesperson handling. """
         kwargs = super().get_form_kwargs()
-        kwargs["user"] = self.request.user  # ✅ Pass user to the form
+        kwargs["user"] = self.request.user  # ✅ Pass user to form
         return kwargs
 
     def form_valid(self, form):
@@ -190,11 +198,12 @@ class CustomerUpdateView(LoginRequiredMixin, SalespersonAccessMixin, UpdateView)
         """
         user = self.request.user
 
-        # 🛑 Log the raw input data before saving
-        logger.info(f"🔹 Form Data Before Saving: {form.cleaned_data}")
-
+        # ✅ Prevent Salespersons from changing the assigned Salesperson
         if user.profile.role == "Salesperson":
             form.instance.salesperson = self.object.salesperson  # ✅ Keep original salesperson
+
+        # 🛑 Log the raw input data before saving
+        logger.info(f"🔹 Form Data Before Saving: {form.cleaned_data}")
 
         response = super().form_valid(form)
 
@@ -202,11 +211,14 @@ class CustomerUpdateView(LoginRequiredMixin, SalespersonAccessMixin, UpdateView)
         updated_customer = get_object_or_404(Customer, id=form.instance.id)
         logger.info(f"✅ Database After Update: {updated_customer.name}, Sales: {updated_customer.estimated_yearly_sales}")
 
+        messages.success(self.request, "Customer details updated successfully!")  # ✅ Show success message
+
         return response
 
     def form_invalid(self, form):
-        """ Log invalid form submissions for debugging """
-        logger.error(f"CustomerEditView - FORM INVALID: {form.errors}")
+        """ Log invalid form submissions for debugging and show an error message """
+        logger.error(f"❌ CustomerEditView - FORM INVALID: {form.errors}")
+        messages.error(self.request, "There were errors in your form submission. Please correct them.")
         return super().form_invalid(form)
 
 class ContactUpdateView(LoginRequiredMixin, UpdateView):
@@ -366,7 +378,7 @@ def customer_list(request):
     if request.user.profile.role == "Executive":
         customers = Customer.objects.all()  # Executives see all customers
     else:
-        customers = Customer.objects.filter(salesperson=request.user.salesperson)  # Salespersons see only their own
+        customers = Customer.objects.filter(salesperson=request.user.salesperson).order_by("department", "name")  # Salespersons see only their own
 
     # Group customers by department
     grouped_customers = defaultdict(list)
@@ -391,7 +403,10 @@ def contact_list(request):
 
     # ✅ Organize customers under their respective departments
     for customer in customers:
-        for contact in customer.contacts.all():
+        # ✅ Order contacts alphabetically within each customer
+        sorted_contacts = sorted(customer.contacts.all(), key=lambda contact: contact.name.lower())
+
+        for contact in sorted_contacts:
             # Ensure birthday_month is an integer
             birthday_month = int(contact.birthday_month) if contact.birthday_month else None
             birthday_day = contact.birthday_day
@@ -405,6 +420,8 @@ def contact_list(request):
             # Attach clean_birthday to the contact
             contact.clean_birthday = clean_birthday
 
+        # ✅ Store sorted contacts for the customer
+        customer.sorted_contacts = sorted_contacts
         grouped_contacts[customer.department].append(customer)
 
     return render(request, "crm/contact_list.html", {"grouped_contacts": dict(grouped_contacts)})
@@ -511,8 +528,8 @@ def executive_required(view_func):
 def executive_dashboard(request):
     """ View for Executives to see an overview of all users and their performance. """
 
-    # Retrieve all users with their role
-    users = Profile.objects.select_related("user").all()
+    # Retrieve all users with their role, sorted alphabetically by full name
+    users = Profile.objects.select_related("user").order_by("user__first_name", "user__last_name")
 
     # Build a list with additional stats
     user_data = []

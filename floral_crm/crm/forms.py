@@ -47,7 +47,7 @@ class CustomerForm(forms.ModelForm):
     def clean_salesperson(self):
         """ Ensure Salespeople cannot modify the assigned salesperson. """
         if self.instance.pk and self.instance.salesperson and self.cleaned_data.get("salesperson") != self.instance.salesperson:
-            raise forms.ValidationError("You cannot change the assigned salesperson.")
+            return self.instance.salesperson  # ✅ Return existing salesperson to bypass validation
         return self.cleaned_data.get("salesperson")
 
     def clean_estimated_yearly_sales(self):
