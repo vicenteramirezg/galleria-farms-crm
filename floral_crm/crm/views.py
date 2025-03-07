@@ -421,6 +421,12 @@ class ContactListView(LoginRequiredMixin, ListView):
         return Contact.objects.filter(customer__salesperson=self.request.user.salesperson)  # ✅ Salesperson filter
 
 
+from django.http import HttpResponseRedirect
+from django.urls import reverse
+import logging
+
+logger = logging.getLogger(__name__)
+
 @login_required
 def add_contact(request):
     """ Allows adding a new contact with optional pre-filled customer selection. """
@@ -436,20 +442,21 @@ def add_contact(request):
             contact = form.save(commit=False)
             contact.phone = form.cleaned_data['phone']  # ✅ Ensure correct phone formatting
 
-            # 🚀 **Make sure the customer is properly assigned**
-            if customer:  # If coming from a customer page, assign that customer
+            # 🚀 **Ensure the customer is assigned properly**
+            if customer:
                 contact.customer = customer
             elif "customer" in form.cleaned_data and form.cleaned_data["customer"]:
                 contact.customer = form.cleaned_data["customer"]
             else:
-                # ❌ If no customer is assigned, return an error
                 form.add_error("customer", "This field is required.")
                 return render(request, "crm/add_contact.html", {"form": form, "customer": customer})
 
             contact.save()
-            return redirect("crm:customer_detail", customer_id=contact.customer.id)  # ✅ Redirect to customer page
+            logger.info(f"✅ Contact Created: {contact.name} - Redirecting to customer {contact.customer.id}")
+
+            # 🚀 **Fixed redirect**
+            return HttpResponseRedirect(reverse("crm:customer_detail", args=[contact.customer.id]))  # ✅ Correct way to redirect
     else:
-        # ✅ If customer exists, pre-fill the field. If not, allow selection.
         form = ContactForm(user=request.user, initial={"customer": customer} if customer else {})
 
     return render(request, "crm/add_contact.html", {"form": form, "customer": customer})
