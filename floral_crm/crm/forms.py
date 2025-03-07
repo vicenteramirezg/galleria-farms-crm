@@ -122,7 +122,14 @@ class SignupForm(UserCreationForm):
 
     class Meta:
         model = User
-        fields = ['username', 'first_name', 'last_name', 'email', 'phone', 'password1', 'password2']
+        fields = ['username', 'first_name', 'last_name', 'phone', 'password1', 'password2']
+
+    def clean_username(self):
+        """ Ensure username is a valid email address """
+        username = self.cleaned_data['username']
+        if "@" not in username:
+            raise forms.ValidationError("Please enter a valid email address.")
+        return username.lower()
 
     def clean_phone(self):
         phone_number = self.cleaned_data['phone']
@@ -132,6 +139,7 @@ class SignupForm(UserCreationForm):
 
     def save(self, commit=True):
         user = super().save(commit=False)
+        user.email = user.username  # ✅ Store the username as the email
         if commit:
             user.save()  # Save user first so signal can trigger
 
