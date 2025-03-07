@@ -1,28 +1,24 @@
 from django.db import models
 from django.contrib.auth.models import User
 
-class Role(models.TextChoices):
-    SALESPERSON = 'Salesperson', 'Salesperson'
-    EXECUTIVE = 'Executive', 'Executive'
+class BaseModel(models.Model):
+    """ Abstract model to add created/updated timestamps and user tracking """
+    created_at = models.DateTimeField(auto_now_add=True)  # Automatically set when created
+    updated_at = models.DateTimeField(auto_now=True)  # Automatically updated on save
+    created_by = models.ForeignKey(User, related_name="%(class)s_created", on_delete=models.SET_NULL, null=True, blank=True)
+    updated_by = models.ForeignKey(User, related_name="%(class)s_updated", on_delete=models.SET_NULL, null=True, blank=True)
 
-class Profile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    role = models.CharField(max_length=20, choices=Role.choices, default=Role.SALESPERSON)
+    class Meta:
+        abstract = True  # Prevents Django from creating a separate table
 
-    def is_executive(self):
-        return self.role == Role.EXECUTIVE
-
-    def __str__(self):
-        return f"{self.user.get_full_name()} - {self.role}"
-
-class Salesperson(models.Model):
+class Salesperson(BaseModel):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='salesperson')
-    phone = models.CharField(max_length=20, blank=True)  # Store phone as a string
+    phone = models.CharField(max_length=20, blank=True)
 
     def __str__(self):
         return f"{self.user.get_full_name()}"
 
-class Customer(models.Model):
+class Customer(BaseModel):
     MASS_MARKET = 'mass_market'
     MM2 = 'mm2'
     ECOMMERCE = 'ecommerce'
@@ -45,13 +41,12 @@ class Customer(models.Model):
     )
 
     def get_department_display(self):
-        """ Returns the human-readable department name instead of the stored value """
         return dict(self.DEPARTMENT_CHOICES).get(self.department, "No Department")
 
     def __str__(self):
         return f"{self.name} - {self.get_department_display()}"
 
-class Contact(models.Model):
+class Contact(BaseModel):
     MONTHS = [
         (1, "January"), (2, "February"), (3, "March"), (4, "April"),
         (5, "May"), (6, "June"), (7, "July"), (8, "August"),
