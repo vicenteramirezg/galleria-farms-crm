@@ -94,6 +94,14 @@
                             </li>
                         {% endif %}
 
+                        {% if user.is_authenticated and "Manager" in user.profile.role %}
+                            <li class="nav-item">
+                                <a href="{% url 'crm:manager_dashboard' %}" class="nav-link text-warning fw-bold">
+                                    <i class="fas fa-user-tie"></i> Manager Dashboard
+                                </a>
+                            </li>
+                        {% endif %}
+
                         <!-- Logout -->
                         <li class="nav-item">
                             <form action="{% url 'logout' %}" method="post" class="d-inline">

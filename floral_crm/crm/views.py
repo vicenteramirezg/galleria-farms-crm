@@ -677,3 +677,39 @@ def executive_dashboard(request):
         })
 
     return render(request, "crm/executive_dashboard.html", {"user_data": user_data})
+
+@login_required
+def manager_dashboard(request):
+    """ View for Managers to see an overview of salespeople within their department. """
+
+    user = request.user
+
+    # Ensure only managers can access this view
+    if "Manager" not in user.profile.role:
+        return render(request, "crm/403.html", status=403)  # Unauthorized access
+
+    # Extract department from the role (e.g., "Manager - Wholesale" → "wholesale")
+    department_name = user.profile.role.replace("Manager - ", "").lower()
+
+    # Retrieve all salespeople under the managed department
+    salespeople = Salesperson.objects.filter(customers__department=department_name).distinct()
+
+    # Build the list of salesperson data
+    salesperson_data = []
+    for salesperson in salespeople:
+        total_customers = Customer.objects.filter(salesperson=salesperson, department=department_name).count()
+        total_contacts = Contact.objects.filter(customer__salesperson=salesperson, customer__department=department_name).count()
+        total_sales = Customer.objects.filter(salesperson=salesperson, department=department_name).aggregate(Sum("estimated_yearly_sales"))["estimated_yearly_sales__sum"] or 0
+        avg_relationship_score = Contact.objects.filter(customer__salesperson=salesperson, customer__department=department_name).aggregate(Avg("relationship_score"))["relationship_score__avg"] or 0
+
+        salesperson_data.append({
+            "username": salesperson.user.username,
+            "full_name": salesperson.user.get_full_name(),
+            "role": "Salesperson",  # Always a salesperson
+            "total_customers": total_customers,
+            "total_contacts": total_contacts,
+            "total_sales": f"${total_sales:,.0f}",  # Format with commas
+            "avg_relationship_score": round(avg_relationship_score, 2) if avg_relationship_score else "N/A"
+        })
+
+    return render(request, "crm/manager_dashboard.html", {"salesperson_data": salesperson_data, "department_name": department_name.capitalize()})

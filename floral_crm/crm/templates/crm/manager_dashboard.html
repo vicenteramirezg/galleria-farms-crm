@@ -1,0 +1,47 @@
+{% extends "crm/base.html" %}
+
+{% block title %}{{ department_name }} Manager Dashboard{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h1 class="text-center display-4 font-weight-bold">{{ department_name }} Manager Dashboard</h1>
+
+    <div class="table-responsive mt-4">
+        <table class="table table-bordered table-striped">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Username</th>
+                    <th>Full Name</th>
+                    <th>Role</th>
+                    <th>Total Customers</th>
+                    <th>Total Contacts</th>
+                    <th>Total Estimated Yearly Sales</th>
+                    <th>Average Relationship Score</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for salesperson in salesperson_data %}
+                <tr>
+                    <td>{{ salesperson.username }}</td>
+                    <td>{{ salesperson.full_name }}</td>
+                    <td><span class="badge bg-primary">{{ salesperson.role }}</span></td>
+                    <td>{{ salesperson.total_customers }}</td>
+                    <td>{{ salesperson.total_contacts }}</td>
+                    <td>{{ salesperson.total_sales }}</td>
+                    <td>{{ salesperson.avg_relationship_score }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center">No salespeople found in this department.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Back Button -->
+    <div class="text-center mt-4">
+        <a href="{% url 'home' %}" class="btn btn-secondary">Back to Home</a>
+    </div>
+</div>
+{% endblock %}

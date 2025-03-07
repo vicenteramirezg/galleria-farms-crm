@@ -16,4 +16,5 @@ urlpatterns = [
     path('customers/add/', views.add_customer, name='add_customer'),  # Add this line to map the URL for add_customer
     path("customer/<int:pk>/", CustomerDetailView.as_view(), name="customer_detail"),  # ✅ Correct
     path('executive-dashboard/', views.executive_dashboard, name='executive_dashboard'),
+    path("manager-dashboard/", views.manager_dashboard, name="manager_dashboard"),
 ]
