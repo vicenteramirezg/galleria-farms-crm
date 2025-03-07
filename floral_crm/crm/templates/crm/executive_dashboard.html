@@ -1,5 +1,7 @@
 {% extends "crm/base.html" %}
 
+{% load humanize %}
+
 {% block title %}Executive Dashboard - CRM{% endblock %}
 
 {% block content %}
@@ -17,7 +19,6 @@
                     <th>Total Contacts</th>
                     <th>Total Estimated Yearly Sales</th>
                     <th>Average Relationship Score</th>
-                    <th>Actions</th>  <!-- ✅ New column for role updates -->
                 </tr>
             </thead>
             <tbody>
@@ -27,38 +28,20 @@
                     <td>{{ user.full_name }}</td>
                     <td>
                         <span class="badge 
-                            {% if user.role and user.role == 'Executive' %}bg-danger
-                            {% elif user.role and 'Manager' in user.role %}bg-success
+                            {% if user.role == 'Executive' %}bg-danger
+                            {% elif 'Manager' in user.role %}bg-success
                             {% else %}bg-primary{% endif %}">
                             {{ user.role }}
                         </span>
-                    </td>
+                    </td>                    
                     <td>{{ user.total_customers }}</td>
                     <td>{{ user.total_contacts }}</td>
-                    <td>${{ user.total_sales|intcomma }}</td>
+                    <td>${{ user.total_sales|default:"0"|intcomma }}</td>  <!-- ✅ Added intcomma for formatting -->
                     <td>{{ user.avg_relationship_score|default:"N/A" }}</td>
-                    <td>
-                        {% if user.can_edit_role is not None and user.can_edit_role %}
-                        <form method="post" action="{% url 'crm:executive_dashboard' %}">
-                            {% csrf_token %}
-                            <input type="hidden" name="user_id" value="{{ user.id }}">
-                            <select name="new_role" class="form-select form-select-sm">
-                                {% for role in available_roles %}
-                                    <option value="{{ role }}" {% if user.role == role %}selected{% endif %}>
-                                        {{ role }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                            <button type="submit" class="btn btn-sm btn-outline-success mt-1">Update</button>
-                        </form>
-                        {% else %}
-                        <span class="text-muted">N/A</span>
-                        {% endif %}
-                    </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="8" class="text-center">No users found.</td>
+                    <td colspan="7" class="text-center">No users found.</td>
                 </tr>
                 {% endfor %}
             </tbody>
