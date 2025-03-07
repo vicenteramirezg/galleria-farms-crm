@@ -675,14 +675,20 @@ def executive_dashboard(request):
         new_role = request.POST.get("new_role")
 
         if user_id and new_role:
-            user_to_update = get_object_or_404(User, id=user_id)
-            user_to_update.profile.role = new_role
-            user_to_update.profile.save()
-            messages.success(request, f"{user_to_update.get_full_name()}'s role updated to {new_role}!")
-            return redirect("crm:executive_dashboard")
+            user_to_update = get_object_or_404(Profile, user_id=user_id)  # ✅ Use Profile instead of User directly
+            if new_role in [Role.EXECUTIVE, Role.MANAGER_MASS_MARKET, Role.MANAGER_MM2, Role.MANAGER_ECOMMERCE, Role.MANAGER_WHOLESALE]:
+                user_to_update.role = new_role
+                user_to_update.save()
+                messages.success(request, f"{user_to_update.user.get_full_name()}'s role updated to {new_role}!")
+                return redirect("crm:executive_dashboard")
+            else:
+                messages.error(request, "Invalid role selection.")
 
     # Fetch available roles (only Manager and Executive)
-    available_roles = [Role.EXECUTIVE, Role.MANAGER_MASS_MARKET, Role.MANAGER_MM2, Role.MANAGER_ECOMMERCE, Role.MANAGER_WHOLESALE]
+    available_roles = [
+        Role.EXECUTIVE, Role.MANAGER_MASS_MARKET, Role.MANAGER_MM2, 
+        Role.MANAGER_ECOMMERCE, Role.MANAGER_WHOLESALE
+    ]
 
     # Build a list with additional stats
     user_data = []
@@ -693,9 +699,13 @@ def executive_dashboard(request):
             total_customers = Customer.objects.filter(salesperson=salesperson).count()
             total_contacts = Contact.objects.filter(customer__salesperson=salesperson).count()
             total_sales = Customer.objects.filter(salesperson=salesperson).aggregate(Sum("estimated_yearly_sales"))["estimated_yearly_sales__sum"] or 0
-            avg_relationship_score = Contact.objects.filter(customer__salesperson=salesperson).aggregate(Avg("relationship_score"))["relationship_score__avg"] or 0
+            avg_relationship_score = Contact.objects.filter(customer__salesperson=salesperson).aggregate(Avg("relationship_score"))["relationship_score__avg"] 
+
+            # ✅ Ensure avg_relationship_score doesn't break rounding
+            avg_relationship_score = round(avg_relationship_score, 2) if avg_relationship_score is not None else "N/A"
         else:
-            total_customers = total_contacts = total_sales = avg_relationship_score = "N/A"
+            total_customers = total_contacts = total_sales = "N/A"
+            avg_relationship_score = "N/A"
 
         user_data.append({
             "id": profile.user.id,
@@ -705,7 +715,7 @@ def executive_dashboard(request):
             "total_customers": total_customers,
             "total_contacts": total_contacts,
             "total_sales": total_sales,
-            "avg_relationship_score": round(avg_relationship_score, 2) if avg_relationship_score != "N/A" else "N/A",
+            "avg_relationship_score": avg_relationship_score,
             "can_edit_role": profile.role == Role.SALESPERSON,  # ✅ Only Salesperson roles can be changed
         })
 
