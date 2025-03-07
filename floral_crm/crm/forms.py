@@ -86,19 +86,24 @@ class ContactForm(forms.ModelForm):
         else:
             self.fields["customer"].queryset = Customer.objects.all()
 
+        # ✅ Check if the form is initialized with a specific customer
+        if "initial" in kwargs and "customer" in kwargs["initial"]:
+            self.fields["customer"].initial = kwargs["initial"]["customer"]
+            self.fields["customer"].disabled = True  # 🔒 Lock customer selection when adding from customer profile
+
         # ✅ Pre-fill existing values if available
         if self.instance and self.instance.pk:
             self.fields["birthday_month"].initial = self.instance.birthday_month
             self.fields["birthday_day"].initial = self.instance.birthday_day
-            self.fields["customer"].disabled = True  # 🔒 Make customer non-editable when editing a contact
+            self.fields["customer"].disabled = True  # 🔒 Keep customer non-editable when editing a contact
 
         # Apply Bootstrap classes & center alignment
         for field_name, field in self.fields.items():
             field.widget.attrs.update({"class": "form-control text-center"})  # Centers text inside fields
 
         # Specifically control width for Address field
-        self.fields["address"].widget.attrs.update({"style": "max-width: 400px; margin: 0 auto; max-height: 100px"})  # Centered & fixed width
-
+        self.fields["address"].widget.attrs.update({"style": "max-width: 400px; margin: 0 auto; max-height: 100px"})
+        
 class SignupForm(UserCreationForm):
     first_name = forms.CharField(max_length=30, required=True, help_text='Required.')
     last_name = forms.CharField(max_length=30, required=True, help_text='Required.')

@@ -66,6 +66,13 @@
         <p>No contacts found for this customer.</p>
     {% endif %}
 
+    <!-- Add Contact Button -->
+    <div class="text-center mt-4">
+        <a href="{% url 'crm:add_contact' %}?customer_id={{ customer.id }}" class="btn btn-primary btn-lg">
+            <i class="fas fa-user-plus"></i> Add Contact
+        </a>
+    </div>
+
     <!-- Back Button -->
     <div class="text-center mt-4">
         <a href="{% url 'crm:customer_list' %}" class="btn btn-secondary">Back to Customers</a>

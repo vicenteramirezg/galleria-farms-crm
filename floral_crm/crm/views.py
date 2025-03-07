@@ -400,17 +400,25 @@ class ContactListView(LoginRequiredMixin, ListView):
 
 @login_required
 def add_contact(request):
+    customer_id = request.GET.get("customer_id")  # ✅ Get customer ID from the URL
+    customer = None
+
+    if customer_id:
+        customer = get_object_or_404(Customer, id=customer_id)  # ✅ Ensure customer exists
+
     if request.method == "POST":
         form = ContactForm(request.POST, user=request.user)  # ✅ Pass user context
         if form.is_valid():
             contact = form.save(commit=False)
             contact.phone = form.cleaned_data['phone']  # Ensure phone formatting
+            if customer:
+                contact.customer = customer  # ✅ Assign selected customer
             contact.save()
-            return redirect("crm:contact_list")
+            return redirect("crm:customer_detail", customer_id=contact.customer.id)  # ✅ Redirect back to customer page
     else:
-        form = ContactForm(user=request.user)
+        form = ContactForm(user=request.user, initial={"customer": customer})  # ✅ Pre-fill customer field
 
-    return render(request, "crm/add_contact.html", {"form": form})
+    return render(request, "crm/add_contact.html", {"form": form, "customer": customer})
 
 class CustomerDetailView(LoginRequiredMixin, DetailView):
     model = Customer
