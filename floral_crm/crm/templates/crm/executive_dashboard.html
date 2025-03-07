@@ -27,8 +27,8 @@
                     <td>{{ user.full_name }}</td>
                     <td>
                         <span class="badge 
-                            {% if user.role == 'Executive' %}bg-danger
-                            {% elif 'Manager' in user.role %}bg-success
+                            {% if user.role and user.role == 'Executive' %}bg-danger
+                            {% elif user.role and 'Manager' in user.role %}bg-success
                             {% else %}bg-primary{% endif %}">
                             {{ user.role }}
                         </span>
@@ -38,7 +38,7 @@
                     <td>${{ user.total_sales|intcomma }}</td>
                     <td>{{ user.avg_relationship_score|default:"N/A" }}</td>
                     <td>
-                        {% if user.can_edit_role %}
+                        {% if user.can_edit_role is not None and user.can_edit_role %}
                         <form method="post" action="{% url 'crm:executive_dashboard' %}">
                             {% csrf_token %}
                             <input type="hidden" name="user_id" value="{{ user.id }}">
