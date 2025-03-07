@@ -162,7 +162,7 @@ EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 
 # ✅ SMTP Configuration
 EMAIL_HOST = os.getenv("EMAIL_HOST")  # SMTP2Go host
-EMAIL_PORT = int(os.getenv("EMAIL_PORT")  # 2525, 587, 25 (TLS) or 465 (SSL)
+EMAIL_PORT = int(os.getenv("EMAIL_PORT"))  # 2525, 587, 25 (TLS) or 465 (SSL)
 EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS") == "True"  # Use TLS for security
 EMAIL_USE_SSL = os.getenv("EMAIL_USE_SSL") == "True"  # Use SSL if using port 465
 
