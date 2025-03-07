@@ -20,6 +20,9 @@ load_dotenv()
 # Base directory of the project
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Detect if running locally or in production
+IS_PRODUCTION = os.getenv("RAILWAY_ENVIRONMENT", "development") == "production"
+
 # ✅ Secret Key
 SECRET_KEY = os.getenv("SECRET_KEY", "default-secret-key")
 
@@ -63,11 +66,18 @@ MIDDLEWARE = [
 ROOT_URLCONF = "floral_crm.urls"
 
 # ✅ Security Settings (Force HTTPS)
-SECURE_SSL_REDIRECT = True  # Redirect all HTTP traffic to HTTPS
-SECURE_HSTS_SECONDS = 31536000  # Enables HTTP Strict Transport Security (HSTS)
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-SECURE_HSTS_PRELOAD = True
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")  # Enable SSL behind a proxy
+
+# ✅ Security Settings (Force HTTPS only in production)
+SECURE_SSL_REDIRECT = IS_PRODUCTION  # Redirect HTTP to HTTPS in production only
+
+if IS_PRODUCTION:
+    SECURE_HSTS_SECONDS = 31536000  # Enables HTTP Strict Transport Security (HSTS)
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")  # Enable SSL behind a proxy
+else:
+    SECURE_HSTS_SECONDS = 0  # Disable HSTS locally
+    SECURE_PROXY_SSL_HEADER = None  # Disable SSL enforcement locally
 
 # ✅ Cookie Security
 CSRF_COOKIE_SECURE = True  # Ensures CSRF cookies are only sent over HTTPS
@@ -108,8 +118,6 @@ TEMPLATES = [
 WSGI_APPLICATION = "floral_crm.wsgi.application"
 
 # ✅ Database Configuration
-# Detect if running locally or in production
-IS_PRODUCTION = os.getenv("RAILWAY_ENVIRONMENT", "development") == "production"
 
 if IS_PRODUCTION:
     DATABASES = {
@@ -148,6 +156,19 @@ STATICFILES_DIRS = [
 ]
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
+# ✅ Email Backend
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+
+# ✅ SMTP Configuration
+EMAIL_HOST = os.getenv("EMAIL_HOST", "mail.smtp2go.com")  # SMTP2Go host
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", 2525))  # 2525, 587, 25 (TLS) or 465 (SSL)
+EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True") == "True"  # Use TLS for security
+EMAIL_USE_SSL = os.getenv("EMAIL_USE_SSL", "False") == "True"  # Use SSL if using port 465
+
+# ✅ Default "From" Email
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "noreply@galleriafarms.com")
+
 
 # ✅ Default Auto Field
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
