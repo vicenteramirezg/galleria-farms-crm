@@ -38,6 +38,10 @@ MONTH_NAMES = {
 def home(request):
     return render(request, 'home.html')
 
+def custom_404_view(request, exception):
+    """ Custom 404 Page """
+    return render(request, "404.html", status=404)
+
 def signup(request):
     if request.method == 'POST':
         form = SignupForm(request.POST)
