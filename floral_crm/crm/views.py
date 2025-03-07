@@ -417,7 +417,8 @@ class ContactListView(LoginRequiredMixin, ListView):
 
 @login_required
 def add_contact(request):
-    customer_id = request.GET.get("customer_id")  # ✅ Get customer ID from the URL
+    """ Allows adding a new contact with optional pre-filled customer selection. """
+    customer_id = request.GET.get("customer_id")  # ✅ Get customer ID from URL
     customer = None
 
     if customer_id:
@@ -427,13 +428,13 @@ def add_contact(request):
         form = ContactForm(request.POST, user=request.user)  # ✅ Pass user context
         if form.is_valid():
             contact = form.save(commit=False)
-            contact.phone = form.cleaned_data['phone']  # Ensure phone formatting
-            if customer:
-                contact.customer = customer  # ✅ Assign selected customer
+            contact.phone = form.cleaned_data['phone']  # ✅ Ensure correct phone formatting
+            contact.customer = form.cleaned_data['customer']  # ✅ Always assign selected customer
             contact.save()
-            return redirect("crm:customer_detail", customer_id=contact.customer.id)  # ✅ Redirect back to customer page
+            return redirect("crm:customer_detail", customer_id=contact.customer.id)  # ✅ Redirect to customer page
     else:
-        form = ContactForm(user=request.user, initial={"customer": customer})  # ✅ Pre-fill customer field
+        # ✅ If customer exists, pre-fill the field. If not, allow selection.
+        form = ContactForm(user=request.user, initial={"customer": customer} if customer else {})
 
     return render(request, "crm/add_contact.html", {"form": form, "customer": customer})
 
