@@ -64,4 +64,11 @@ nav a:hover {
     white-space: nowrap; /* Prevents text wrapping */
     padding: 6px 12px;
     min-width: 130px; /* Keeps button width consistent */
+    margin-left: 10px;
+}
+
+/* Add this to your CSS file */
+.footer-logo {
+    width: 100px; /* Adjust the width as needed */
+    height: auto; /* Maintain aspect ratio */
 }
