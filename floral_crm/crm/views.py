@@ -4,7 +4,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from django.urls import reverse, reverse_lazy
-from django.http import HttpResponse, HttpResponseNotAllowed, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseNotAllowed, HttpResponseRedirect, JsonResponse
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views import View
 from django.views.generic import ListView, UpdateView, CreateView, DetailView
@@ -662,14 +662,12 @@ def executive_required(view_func):
     return _wrapped_view
 
 @login_required
-@executive_required  # ✅ Ensures only Executives can access this page
+@executive_required
 def executive_dashboard(request):
     """ View for Executives to see an overview of all users and their performance. """
-
-    # Retrieve all users with their role, sorted alphabetically by full name
+    
     users = Profile.objects.select_related("user").order_by("user__first_name", "user__last_name")
 
-    # Build a list with additional stats
     user_data = []
     for profile in users:
         salesperson = getattr(profile.user, "salesperson", None)
@@ -680,9 +678,10 @@ def executive_dashboard(request):
             total_sales = Customer.objects.filter(salesperson=salesperson).aggregate(Sum("estimated_yearly_sales"))["estimated_yearly_sales__sum"] or 0
             avg_relationship_score = Contact.objects.filter(customer__salesperson=salesperson).aggregate(Avg("relationship_score"))["relationship_score__avg"] or 0
         else:
-            total_customers = total_contacts = total_sales = avg_relationship_score = "N/A"  # Executives may not have sales data
+            total_customers = total_contacts = total_sales = avg_relationship_score = "N/A"
 
         user_data.append({
+            "id": profile.user.id,
             "username": profile.user.username,
             "full_name": profile.user.get_full_name(),
             "role": profile.role,
@@ -693,6 +692,31 @@ def executive_dashboard(request):
         })
 
     return render(request, "crm/executive_dashboard.html", {"user_data": user_data})
+
+
+@login_required
+@executive_required
+def update_user_role(request):
+    """ Allows Executives to update a user's role via AJAX. """
+    if request.method == "POST":
+        user_id = request.POST.get("user_id")
+        new_role = request.POST.get("new_role")
+
+        if not user_id or not new_role:
+            return JsonResponse({"success": False, "error": "Invalid data"})
+
+        user_to_update = get_object_or_404(Profile, user_id=user_id)
+        if new_role in [
+            Role.EXECUTIVE, Role.MANAGER_MASS_MARKET, Role.MANAGER_MM2, 
+            Role.MANAGER_ECOMMERCE, Role.MANAGER_WHOLESALE, Role.SALESPERSON
+        ]:
+            user_to_update.role = new_role
+            user_to_update.save()
+            return JsonResponse({"success": True})
+        
+        return JsonResponse({"success": False, "error": "Invalid role selection"})
+
+    return JsonResponse({"success": False, "error": "Invalid request method"})
 
 @login_required
 def manager_dashboard(request):

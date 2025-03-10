@@ -1,5 +1,4 @@
 {% extends "crm/base.html" %}
-
 {% load humanize %}
 
 {% block title %}Executive Dashboard - CRM{% endblock %}
@@ -19,6 +18,7 @@
                     <th>Total Contacts</th>
                     <th>Total Estimated Yearly Sales</th>
                     <th>Average Relationship Score</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -33,15 +33,26 @@
                             {% else %}bg-primary{% endif %}">
                             {{ user.role }}
                         </span>
-                    </td>                    
+                    </td>
                     <td>{{ user.total_customers }}</td>
                     <td>{{ user.total_contacts }}</td>
-                    <td>${{ user.total_sales|default:"0"|intcomma }}</td>  <!-- ✅ Added intcomma for formatting -->
+                    <td>${{ user.total_sales|default:"0"|intcomma }}</td>
                     <td>{{ user.avg_relationship_score|default:"N/A" }}</td>
+                    <td>
+                        <!-- Edit Button (Opens Modal) -->
+                        <button class="btn btn-sm btn-outline-primary edit-role-btn" 
+                                data-user-id="{{ user.id }}" 
+                                data-username="{{ user.username }}" 
+                                data-role="{{ user.role }}"
+                                data-bs-toggle="modal" 
+                                data-bs-target="#editRoleModal">
+                            <i class="fas fa-pencil-alt"></i> Edit
+                        </button>
+                    </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="7" class="text-center">No users found.</td>
+                    <td colspan="8" class="text-center">No users found.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -53,4 +64,78 @@
         <a href="{% url 'home' %}" class="btn btn-secondary">Back to Home</a>
     </div>
 </div>
+
+<!-- Role Edit Modal -->
+<div class="modal fade" id="editRoleModal" tabindex="-1" aria-labelledby="editRoleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editRoleModalLabel">Edit User Role</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editRoleForm">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="hidden" id="editUserId" name="user_id">
+                    <p><strong>Username:</strong> <span id="editUsername"></span></p>
+                    <label for="editRole">Select New Role:</label>
+                    <select id="editRole" name="new_role" class="form-select">
+                        <option value="Salesperson">Salesperson</option>
+                        <option value="Manager - Mass Market">Manager - Mass Market</option>
+                        <option value="Manager - MM2">Manager - MM2</option>
+                        <option value="Manager - Ecommerce">Manager - Ecommerce</option>
+                        <option value="Manager - Wholesale">Manager - Wholesale</option>
+                        <option value="Executive">Executive</option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for Role Editing -->
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const editButtons = document.querySelectorAll(".edit-role-btn");
+    const editUserId = document.getElementById("editUserId");
+    const editUsername = document.getElementById("editUsername");
+    const editRole = document.getElementById("editRole");
+    const editRoleForm = document.getElementById("editRoleForm");
+
+    editButtons.forEach(button => {
+        button.addEventListener("click", function() {
+            editUserId.value = this.dataset.userId;
+            editUsername.textContent = this.dataset.username;
+            editRole.value = this.dataset.role;
+        });
+    });
+
+    editRoleForm.addEventListener("submit", function(event) {
+        event.preventDefault();
+        const formData = new FormData(editRoleForm);
+
+        fetch("{% url 'crm:update_user_role' %}", {
+            method: "POST",
+            body: formData,
+            headers: {
+                "X-CSRFToken": "{{ csrf_token }}"
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert("Error updating role: " + data.error);
+            }
+        })
+        .catch(error => console.error("Error:", error));
+    });
+});
+</script>
+
 {% endblock %}
