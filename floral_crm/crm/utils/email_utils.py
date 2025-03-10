@@ -60,7 +60,7 @@ def send_birthday_email(salesperson, contact):
                 <p>Take a moment to send them a quick message or give them a call.</p>
 
                 <div class="button-container">
-                    <a href="https://crm.galleriafarms.com/crm/contact/{contact.id}" class="cta-button">View Contact</a>
+                    <a href="https://crm.galleriafarms.com/crm/dashboard/" class="cta-button">Go to Dashboard</a>
                     {f'<a href="{whatsapp_link}" class="whatsapp-button">💬 Send a message</a>' if contact.phone else ''}
                     {f'<a href="{email_link}" class="email-button">📧 Send an email</a>' if contact.email else ''}
                 </div>
