@@ -34,7 +34,10 @@
                                        class="text-decoration-none fw-bold">
                                         {{ customer.name }}
                                     </a>
-                                </h3>                                
+                                </h3>
+                                
+                                <!-- Salesperson -->
+                                <h5 class="text-muted">{{ customer.salesperson }}</h5>
 
                                 <!-- Estimated Yearly Sales -->
                                 <h6 class="text-muted">Estimated Yearly Sales: ${{ customer.estimated_yearly_sales|intcomma }}</h6>

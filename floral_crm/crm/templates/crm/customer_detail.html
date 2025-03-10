@@ -21,6 +21,7 @@
 
             <ul class="list-unstyled">
                 <li><strong>Department:</strong> {{ customer.get_department_display }}</li>
+                <li><strong>Salesperson:</strong> {{ customer.salesperson }}</li>
                 <li><strong>Estimated Yearly Sales:</strong> ${{ customer.estimated_yearly_sales|intcomma }}</li>
                 <li><strong>Average Relationship Score:</strong> {{ avg_relationship_score|floatformat:2 }}</li>
             </ul>

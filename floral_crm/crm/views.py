@@ -1,6 +1,7 @@
 # Django core imports
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from django.urls import reverse, reverse_lazy
@@ -90,19 +91,47 @@ def dashboard(request):
         - Managers see only customers & contacts within their department.
         - Salespeople see only their assigned customers & contacts.
     """
+    User = get_user_model()
     user = request.user
     salesperson = getattr(user, 'salesperson', None)
+
+    # Get filter values from request
+    selected_department = request.GET.get("department", "")
+    selected_salesperson = request.GET.get("salesperson", "")
+
+    # Convert selected_salesperson to an integer safely
+    try:
+        selected_salesperson = int(selected_salesperson) if selected_salesperson else None
+    except ValueError:
+        selected_salesperson = None
 
     # Role-based filtering logic
     if user.profile.role == Role.EXECUTIVE:
         customers = Customer.objects.prefetch_related("contacts")  # ✅ Executives see everything
 
-    elif "Manager" in user.profile.role:
-        department_name = user.profile.role.replace("Manager - ", "").lower()
-        customers = Customer.objects.filter(department=department_name).prefetch_related("contacts")  # ✅ Managers see their department's data
+        # Executives can filter freely
+        if selected_department:
+            customers = customers.filter(department=selected_department)
+        if selected_salesperson:
+            # Map User ID to Salesperson ID
+            salesperson_id = User.objects.filter(id=selected_salesperson).values_list('salesperson__id', flat=True).first()
+            if salesperson_id:
+                customers = customers.filter(salesperson_id=salesperson_id)
 
-    else:  # Salesperson role
-        customers = Customer.objects.filter(salesperson=salesperson).prefetch_related("contacts")  # ✅ Salespeople see only their assigned customers
+    elif "Manager" in user.profile.role:
+        # ✅ Ensure department restriction is applied only once
+        department_name = user.profile.role.replace("Manager - ", "").lower()
+        customers = Customer.objects.filter(department=department_name).prefetch_related("contacts")
+
+        if selected_salesperson:
+            # Map User ID to Salesperson ID
+            salesperson_id = User.objects.filter(id=selected_salesperson).values_list('salesperson__id', flat=True).first()
+            if salesperson_id:
+                customers = customers.filter(salesperson_id=salesperson_id)  # ✅ Only filter salesperson inside department scope
+
+    else:  
+        # ✅ Salespeople should ONLY see their own customers
+        customers = Customer.objects.filter(salesperson=salesperson).prefetch_related("contacts")
 
     # Calculate key statistics
     total_sales = customers.aggregate(Sum("estimated_yearly_sales"))["estimated_yearly_sales__sum"] or 0
@@ -134,31 +163,53 @@ def dashboard(request):
     upcoming_birthdays = Contact.objects.filter(
         customer__in=customers
     ).filter(
-        Q(birthday_month=today_month, birthday_day__gte=today_day) |  # Birthdays later this month
-        Q(birthday_month=future_month, birthday_day__lte=future_day) |  # Birthdays early next month
-        Q(birthday_month__gt=today_month, birthday_month__lt=future_month)  # Birthdays in-between
+        Q(birthday_month=today_month, birthday_day__gte=today_day) |  
+        Q(birthday_month=future_month, birthday_day__lte=future_day) |  
+        Q(birthday_month__gt=today_month, birthday_month__lt=future_month)
     ).order_by("birthday_month", "birthday_day")
 
     # ✅ Ensure clean birthday formatting
     for contact in upcoming_birthdays:
         try:
-            month_int = int(contact.birthday_month)  # Convert to int if stored as string
-            month_name = MONTH_NAMES.get(month_int)  # Get month name from dictionary
+            month_int = int(contact.birthday_month)  
+            month_name = MONTH_NAMES.get(month_int)  
         except (ValueError, TypeError):
-            month_name = None  # Handle invalid values safely
+            month_name = None  
 
-        if month_name:  # ✅ Ensure it's valid
+        if month_name:  
             contact.clean_birthday = f"{month_name}, {contact.birthday_day}"
         else:
-            contact.clean_birthday = "Not provided"  # Handle missing or incorrect data
+            contact.clean_birthday = "Not provided"  
+
+    # ✅ Fetch all departments for filtering
+    department_choices = dict(Customer.DEPARTMENT_CHOICES)
+
+    # ✅ Fetch available salespeople (Only those assigned to customers in the manager's department)
+    if user.profile.role == Role.EXECUTIVE:
+        available_salespeople = User.objects.filter(
+            salesperson__customers__isnull=False
+        ).distinct().order_by("first_name", "last_name")
+
+    elif "Manager" in user.profile.role:
+        department_name = user.profile.role.replace("Manager - ", "").lower()
+        available_salespeople = User.objects.filter(
+            salesperson__customers__department=department_name  
+        ).distinct().order_by("first_name", "last_name")
+
+    else:
+        available_salespeople = User.objects.filter(id=user.id)  
 
     return render(request, "crm/dashboard.html", {
         "customers": customer_data,
-        "total_sales": f"{total_sales:,.0f}",  # Format with commas
+        "total_sales": f"{total_sales:,.0f}",
         "total_contacts": total_contacts,
         "avg_relationship_score": round(avg_relationship_score, 2) if avg_relationship_score else "N/A",
         "top_customers": top_customers,
-        "upcoming_birthdays": upcoming_birthdays
+        "upcoming_birthdays": upcoming_birthdays,
+        "department_choices": department_choices,
+        "available_salespeople": available_salespeople,
+        "selected_department": selected_department,
+        "selected_salesperson": selected_salesperson,
     })
 
 class CustomerUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):

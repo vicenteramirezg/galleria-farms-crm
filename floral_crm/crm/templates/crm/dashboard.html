@@ -8,6 +8,44 @@
 <div class="container py-5">
     <h1 class="text-center display-4 font-weight-bold mb-4">Dashboard</h1>
 
+    <!-- Filtering Options -->
+    <form method="get" class="row mb-4">
+        {% if user.profile.role == "Executive" %}
+        <!-- Department Filter -->
+        <div class="col-md-5">
+            <label for="departmentFilter" class="form-label">Filter by Department:</label>
+            <select name="department" id="departmentFilter" class="form-select" onchange="this.form.submit()">
+                <option value="">All Departments</option>
+                {% for key, value in department_choices.items %}
+                    <option value="{{ key }}" {% if selected_department == key %}selected{% endif %}>
+                        {{ value }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+
+        {% if user.profile.role == "Executive" or "Manager" in user.profile.role %}
+        <!-- Salesperson Filter -->
+        <div class="col-md-5">
+            <label for="salespersonFilter" class="form-label">Filter by Salesperson:</label>
+            <select name="salesperson" id="salespersonFilter" class="form-select" onchange="this.form.submit()">
+                <option value="">All Salespeople</option>
+                {% for salesperson in available_salespeople %}
+                    <option value="{{ salesperson.id }}" {% if selected_salesperson|slugify == salesperson.id|slugify %}selected{% endif %}>
+                        {{ salesperson.get_full_name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+
+        <!-- Reset Filters Button -->
+        <div class="col-md-2 d-flex align-items-end">
+            <a href="{% url 'crm:dashboard' %}" class="btn btn-outline-secondary w-100">Reset Filters</a>
+        </div>
+    </form>
+
     <!-- Key Metrics Row -->
     <div class="row text-center mb-5">
         <div class="col-md-4 mb-4">
