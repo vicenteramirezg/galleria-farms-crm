@@ -40,6 +40,7 @@ nav a:hover {
 .filter-container {
     max-width: 900px; /* Controls width across different pages */
     margin: 0 auto 20px auto; /* Centers it and adds space below */
+    margin-bottom: 10px;
 }
 
 /* Adjust the spacing & alignment of filters */
@@ -63,6 +64,6 @@ nav a:hover {
 .filter-container .btn-outline-secondary {
     white-space: nowrap; /* Prevents text wrapping */
     padding: 6px 12px;
-    min-width: 130px; /* Keeps button width consistent */
+    min-width: 150px; /* Keeps button width consistent */
     margin-left: 10px;
 }
