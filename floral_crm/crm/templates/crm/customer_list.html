@@ -14,7 +14,7 @@
             {% if user.profile.role == "Executive" %}
             <!-- Department Filter -->
             <div class="col-md-5">
-                <label for="departmentFilter" class="form-label">Department:</label>
+                <label for="departmentFilter" class="form-label">Filter by Department:</label>
                 <select name="department" id="departmentFilter" class="form-select" onchange="this.form.submit()">
                     <option value="">All Departments</option>
                     {% for key, value in department_choices.items %}
@@ -29,7 +29,7 @@
             {% if user.profile.role == "Executive" or "Manager" in user.profile.role %}
             <!-- Salesperson Filter -->
             <div class="col-md-5">
-                <label for="salespersonFilter" class="form-label">Salesperson:</label>
+                <label for="salespersonFilter" class="form-label">Filter by Salesperson:</label>
                 <select name="salesperson" id="salespersonFilter" class="form-select" onchange="this.form.submit()">
                     <option value="">All Salespeople</option>
                     {% for salesperson in available_salespeople %}
