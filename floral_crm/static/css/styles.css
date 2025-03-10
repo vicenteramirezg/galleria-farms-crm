@@ -21,3 +21,48 @@ nav a:hover {
 .bg-primary {
     background-color: #211f20 !important;
 }
+
+.form-switch .form-check-input {
+    width: 3rem; /* Make the toggle bigger */
+    height: 1.5rem;
+}
+
+.form-switch .form-check-input:checked {
+    background-color: #0d6efd; /* Bootstrap primary color */
+    border-color: #0d6efd;
+}
+
+.form-switch .form-check-input:not(:checked) {
+    background-color: #ccc;
+}
+
+/* Ensures filter container is aligned & compact */
+.filter-container {
+    max-width: 900px; /* Controls width across different pages */
+    margin: 0 auto 20px auto; /* Centers it and adds space below */
+}
+
+/* Adjust the spacing & alignment of filters */
+.filter-container .col-md-5,
+.filter-container .col-md-4 {
+    max-width: 280px; /* Prevents overly wide dropdowns */
+    margin-bottom: 0; /* Remove unnecessary space below */
+}
+
+/* Ensures filters & reset button are aligned properly */
+.filter-container .d-flex {
+    align-items: end;
+}
+
+/* Adjusts width of filters */
+.filter-container select {
+    max-width: 100%; /* Ensures dropdowns adjust properly */
+}
+
+/* Controls reset button size */
+.filter-container .btn-outline-secondary {
+    white-space: nowrap; /* Prevents text wrapping */
+    padding: 6px 12px;
+    min-width: 130px; /* Keeps button width consistent */
+    margin-left: 10px;
+}

@@ -9,42 +9,44 @@
     <h1 class="text-center display-4 font-weight-bold mb-4">Customers</h1>
 
     <!-- Filtering Options -->
-    <form method="get" class="row mb-4">
-        {% if user.profile.role == "Executive" %}
-        <!-- Department Filter -->
-        <div class="col-md-5">
-            <label for="departmentFilter" class="form-label">Filter by Department:</label>
-            <select name="department" id="departmentFilter" class="form-select" onchange="this.form.submit()">
-                <option value="">All Departments</option>
-                {% for key, value in department_choices.items %}
-                    <option value="{{ key }}" {% if selected_department == key %}selected{% endif %}>
-                        {{ value }}
-                    </option>
-                {% endfor %}
-            </select>
-        </div>
-        {% endif %}
+    <div class="filter-container">
+        <form method="get" class="row g-2">
+            {% if user.profile.role == "Executive" %}
+            <!-- Department Filter -->
+            <div class="col-md-5">
+                <label for="departmentFilter" class="form-label">Department:</label>
+                <select name="department" id="departmentFilter" class="form-select" onchange="this.form.submit()">
+                    <option value="">All Departments</option>
+                    {% for key, value in department_choices.items %}
+                        <option value="{{ key }}" {% if selected_department == key %}selected{% endif %}>
+                            {{ value }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
 
-        {% if user.profile.role == "Executive" or "Manager" in user.profile.role %}
-        <!-- Salesperson Filter -->
-        <div class="col-md-5">
-            <label for="salespersonFilter" class="form-label">Filter by Salesperson:</label>
-            <select name="salesperson" id="salespersonFilter" class="form-select" onchange="this.form.submit()">
-                <option value="">All Salespeople</option>
-                {% for salesperson in available_salespeople %}
-                    <option value="{{ salesperson.id }}" {% if selected_salesperson|slugify == salesperson.id|slugify %}selected{% endif %}>
-                        {{ salesperson.user.get_full_name }}
-                    </option>
-                {% endfor %}
-            </select>
-        </div>
-        {% endif %}
+            {% if user.profile.role == "Executive" or "Manager" in user.profile.role %}
+            <!-- Salesperson Filter -->
+            <div class="col-md-5">
+                <label for="salespersonFilter" class="form-label">Salesperson:</label>
+                <select name="salesperson" id="salespersonFilter" class="form-select" onchange="this.form.submit()">
+                    <option value="">All Salespeople</option>
+                    {% for salesperson in available_salespeople %}
+                        <option value="{{ salesperson.id }}" {% if selected_salesperson|slugify == salesperson.id|slugify %}selected{% endif %}>
+                            {{ salesperson.user.get_full_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
 
-        <!-- Reset Filters Button -->
-        <div class="col-md-2 d-flex align-items-end">
-            <a href="{% url 'crm:customer_list' %}" class="btn btn-outline-secondary w-100">Reset Filters</a>
-        </div>
-    </form>
+            <!-- Reset Filters Button -->
+            <div class="col-md-2 d-flex">
+                <a href="{% url 'crm:customer_list' %}" class="btn btn-outline-secondary">Reset Filters</a>
+            </div>
+        </form>
+    </div>
 
     <!-- Add Customer Button -->
     <div class="text-center mb-4">

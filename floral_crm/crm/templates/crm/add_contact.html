@@ -92,6 +92,15 @@
                 </div>
             </div>
 
+            <!-- Active Contact Toggle -->
+            <div class="mb-3 text-center">
+                <label class="form-label font-weight-bold d-block">Active Contact:</label>
+                <div class="form-check form-switch d-flex justify-content-center">
+                    {{ form.is_active }}
+                    <label class="form-check-label ms-2" for="id_is_active">Active</label>
+                </div>
+            </div>
+
             <!-- Submit Button -->
             <div class="text-center mt-4">
                 <button type="submit" class="btn btn-primary btn-lg">Add Contact</button>

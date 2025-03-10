@@ -7,42 +7,54 @@
     <h1 class="text-center display-4 font-weight-bold mb-4">Contacts</h1>
 
     <!-- Filtering Options -->
-    <form method="get" class="row mb-4">
-        {% if user.profile.role == "Executive" %}
-        <!-- Department Filter -->
-        <div class="col-md-5">
-            <label for="departmentFilter" class="form-label">Filter by Department:</label>
-            <select name="department" id="departmentFilter" class="form-select" onchange="this.form.submit()">
-                <option value="">All Departments</option>
-                {% for key, value in department_choices.items %}
-                    <option value="{{ key }}" {% if selected_department == key %}selected{% endif %}>
-                        {{ value }}
-                    </option>
-                {% endfor %}
-            </select>
-        </div>
-        {% endif %}
+    <div class="filter-container">
+        <form method="get" class="row g-2">
+            {% if user.profile.role == "Executive" %}
+            <!-- Department Filter -->
+            <div class="col-md-5">
+                <label for="departmentFilter" class="form-label">Filter by Department:</label>
+                <select name="department" id="departmentFilter" class="form-select" onchange="this.form.submit()">
+                    <option value="">All Departments</option>
+                    {% for key, value in department_choices.items %}
+                        <option value="{{ key }}" {% if selected_department == key %}selected{% endif %}>
+                            {{ value }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
 
-        {% if user.profile.role == "Executive" or "Manager" in user.profile.role %}
-        <!-- Salesperson Filter -->
-        <div class="col-md-5">
-            <label for="salespersonFilter" class="form-label">Filter by Salesperson:</label>
-            <select name="salesperson" id="salespersonFilter" class="form-select" onchange="this.form.submit()">
-                <option value="">All Salespeople</option>
-                {% for salesperson in available_salespeople %}
-                    <option value="{{ salesperson.id }}" {% if selected_salesperson|slugify == salesperson.id|slugify %}selected{% endif %}>
-                        {{ salesperson.user.get_full_name }}
-                    </option>
-                {% endfor %}
-            </select>
-        </div>
-        {% endif %}
+            {% if user.profile.role == "Executive" or "Manager" in user.profile.role %}
+            <!-- Salesperson Filter -->
+            <div class="col-md-5">
+                <label for="salespersonFilter" class="form-label">Filter by Salesperson:</label>
+                <select name="salesperson" id="salespersonFilter" class="form-select" onchange="this.form.submit()">
+                    <option value="">All Salespeople</option>
+                    {% for salesperson in available_salespeople %}
+                        <option value="{{ salesperson.id }}" {% if selected_salesperson|slugify == salesperson.id|slugify %}selected{% endif %}>
+                            {{ salesperson.user.get_full_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
 
-        <!-- Reset Filters Button -->
-        <div class="col-md-2 d-flex align-items-end">
-            <a href="{% url 'crm:contact_list' %}" class="btn btn-outline-secondary w-100">Reset Filters</a>
-        </div>
-    </form>
+            <!-- Contact Status Filter & Reset Button -->
+            <div class="col-md-5 d-flex">
+                <div class="w-75">
+                    <label for="statusFilter" class="form-label">Contact Status:</label>
+                    <select name="status" id="statusFilter" class="form-select" onchange="this.form.submit()">
+                        <option value="active" {% if selected_status == "active" %}selected{% endif %}>Active</option>
+                        <option value="inactive" {% if selected_status == "inactive" %}selected{% endif %}>Inactive</option>
+                        <option value="all" {% if selected_status == "all" %}selected{% endif %}>All</option>
+                    </select>
+                </div>
+                <div class="w-25 d-flex align-items-end">
+                    <a href="{% url 'crm:contact_list' %}" class="btn btn-outline-secondary">Reset Filters</a>
+                </div>
+            </div>
+        </form>
+    </div>
 
     <!-- Add Contact Button (✅ Now Back) -->
     <div class="text-center mt-4">
@@ -84,6 +96,13 @@
                                                 </li>
                                                 <li class="mb-2">
                                                     <span class="badge bg-info">Relationship Score: {{ contact.relationship_score }}</span>
+                                                </li>
+                                                <li class="mb-2">
+                                                    {% if contact.is_active %}
+                                                        <span class="badge bg-success">Active</span>
+                                                    {% else %}
+                                                        <span class="badge bg-danger">Inactive</span>
+                                                    {% endif %}
                                                 </li>
                                                 <li class="mb-2">
                                                     <a href="https://wa.me/{{ contact.phone }}" class="btn btn-success btn-sm" target="_blank">

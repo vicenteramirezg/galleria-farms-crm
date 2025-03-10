@@ -77,7 +77,7 @@ class CustomerForm(forms.ModelForm):
 class ContactForm(forms.ModelForm):
     class Meta:
         model = Contact
-        fields = ['customer', 'name', 'phone', 'email', 'address', 'birthday_month', 'birthday_day', 'relationship_score']
+        fields = ['customer', 'name', 'phone', 'email', 'address', 'birthday_month', 'birthday_day', 'relationship_score', 'is_active']
 
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)  # ✅ Get logged-in user
@@ -106,6 +106,7 @@ class ContactForm(forms.ModelForm):
             self.fields["birthday_month"].initial = self.instance.birthday_month
             self.fields["birthday_day"].initial = self.instance.birthday_day
             self.fields["customer"].disabled = True  # 🔒 Keep customer non-editable when editing a contact
+            self.fields["is_active"].initial = self.instance.is_active
 
         # Apply Bootstrap classes & center alignment
         for field_name, field in self.fields.items():
@@ -113,6 +114,9 @@ class ContactForm(forms.ModelForm):
 
         # Specifically control width for Address field
         self.fields["address"].widget.attrs.update({"style": "max-width: 400px; margin: 0 auto; max-height: 100px"})
+
+        # ✅ Custom widget for is_active to make it a toggle switch
+        self.fields['is_active'].widget = forms.CheckboxInput(attrs={"class": "form-check-input"})
 
     def clean_relationship_score(self):
         """ Ensure the default relationship score is 0 if left empty. """

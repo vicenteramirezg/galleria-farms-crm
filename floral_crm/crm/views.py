@@ -135,8 +135,9 @@ def dashboard(request):
 
     # Calculate key statistics
     total_sales = customers.aggregate(Sum("estimated_yearly_sales"))["estimated_yearly_sales__sum"] or 0
-    total_contacts = Contact.objects.filter(customer__in=customers).count()
-    avg_relationship_score = Contact.objects.filter(customer__in=customers).aggregate(Avg("relationship_score"))["relationship_score__avg"] or 0
+    total_contacts = Contact.objects.filter(customer__in=customers, is_active=True).count()
+    avg_relationship_score = Contact.objects.filter(customer__in=customers, is_active=True) \
+                                        .aggregate(Avg("relationship_score"))["relationship_score__avg"] or 0
 
     # Prepare data for top customers
     top_customers = customers.order_by("-estimated_yearly_sales")[:5]  # Top 5 by sales
@@ -144,8 +145,8 @@ def dashboard(request):
     # Enrich customer data with aggregated contact stats
     customer_data = []
     for customer in customers:
-        num_contacts = customer.contacts.count()
-        avg_score = customer.contacts.aggregate(Avg("relationship_score"))["relationship_score__avg"] or 0
+        num_contacts = customer.contacts.filter(is_active=True).count()
+        avg_score = customer.contacts.filter(is_active=True).aggregate(Avg("relationship_score"))["relationship_score__avg"] or 0
         customer_data.append({
             "id": customer.id,
             "name": customer.name,
@@ -161,7 +162,8 @@ def dashboard(request):
     future_month, future_day = future_date.month, future_date.day
 
     upcoming_birthdays = Contact.objects.filter(
-        customer__in=customers
+        customer__in=customers,
+        is_active=True  # ✅ Only active contacts
     ).filter(
         Q(birthday_month=today_month, birthday_day__gte=today_day) |  
         Q(birthday_month=future_month, birthday_day__lte=future_day) |  
@@ -579,23 +581,21 @@ def customer_list(request):
 
 @login_required
 def contact_list(request):
-    """ Fetch contacts based on user role:
-        - Executives see all contacts (filterable by department & salesperson).
-        - Managers see only contacts within their department (filterable by salesperson).
-        - Salespeople see only their assigned contacts (no filters).
-    """
+    """ Fetch contacts based on user role & filtering options """
+
     user = request.user
     selected_department = request.GET.get("department", "")
     selected_salesperson = request.GET.get("salesperson", "")
+    selected_status = request.GET.get("status", "all")  # Default to "active" contacts
 
     # Role-based customer access
     if user.profile.role == Role.EXECUTIVE:
-        customers = Customer.objects.prefetch_related("contacts")  # ✅ Executives see everything
+        customers = Customer.objects.prefetch_related("contacts")
 
     elif user.profile.role == Role.SALESPERSON:
-        customers = Customer.objects.filter(salesperson=user.salesperson).prefetch_related("contacts")  # ✅ Salespeople see only their own
+        customers = Customer.objects.filter(salesperson=user.salesperson).prefetch_related("contacts")
 
-    else:  # ✅ Managers see only their department
+    else:  # Managers filter by department
         department_mapping = {
             Role.MANAGER_MASS_MARKET: Customer.MASS_MARKET,
             Role.MANAGER_MM2: Customer.MM2,
@@ -603,11 +603,7 @@ def contact_list(request):
             Role.MANAGER_WHOLESALE: Customer.WHOLESALE,
         }
         department = department_mapping.get(user.profile.role)
-
-        if department:
-            customers = Customer.objects.filter(department=department).prefetch_related("contacts")
-        else:
-            customers = Customer.objects.none()  # 🚫 No access if no valid department
+        customers = Customer.objects.filter(department=department).prefetch_related("contacts") if department else Customer.objects.none()
 
     # Apply filters (Executives & Managers)
     if user.profile.role == Role.EXECUTIVE:
@@ -624,7 +620,15 @@ def contact_list(request):
 
     # ✅ Organize customers under their respective departments
     for customer in customers.order_by("department", "name"):
-        sorted_contacts = sorted(customer.contacts.all(), key=lambda contact: contact.name.lower())  # Alphabetical sorting
+        contacts = customer.contacts.all()
+
+        # ✅ Filter contacts based on selected status
+        if selected_status == "active":
+            contacts = contacts.filter(is_active=True)
+        elif selected_status == "inactive":
+            contacts = contacts.filter(is_active=False)
+
+        sorted_contacts = sorted(contacts, key=lambda contact: contact.name.lower())  # Alphabetical sorting
 
         for contact in sorted_contacts:
             # ✅ Format birthday properly
@@ -640,14 +644,10 @@ def contact_list(request):
     department_choices = dict(Customer.DEPARTMENT_CHOICES)
 
     if user.profile.role == Role.EXECUTIVE:
-        available_salespeople = Salesperson.objects.filter(
-            customers__isnull=False
-        ).distinct().order_by("user__first_name", "user__last_name")
+        available_salespeople = Salesperson.objects.filter(customers__isnull=False).distinct().order_by("user__first_name", "user__last_name")
 
     elif "Manager" in user.profile.role:
-        available_salespeople = Salesperson.objects.filter(
-            customers__department=department
-        ).distinct().order_by("user__first_name", "user__last_name")
+        available_salespeople = Salesperson.objects.filter(customers__department=department).distinct().order_by("user__first_name", "user__last_name")
 
     else:
         available_salespeople = []
@@ -658,6 +658,7 @@ def contact_list(request):
         "available_salespeople": available_salespeople,
         "selected_department": selected_department,
         "selected_salesperson": selected_salesperson,
+        "selected_status": selected_status,  # Pass selected status to template
     })
 
 class ContactListView(LoginRequiredMixin, ListView):
