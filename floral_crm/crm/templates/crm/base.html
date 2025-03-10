@@ -79,7 +79,10 @@
             <!-- Navbar Links -->
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
-                    <li class="nav-item"><a href="{% url 'home' %}" class="nav-link">Home</a></li>
+                    {% if not user.is_authenticated %}  
+                        <li class="nav-item"><a href="{% url 'home' %}" class="nav-link">Home</a></li>
+                    {% endif %}
+
                     {% if user.is_authenticated %}
                         <li class="nav-item"><a href="{% url 'crm:dashboard' %}" class="nav-link">Dashboard</a></li>
                         <li class="nav-item"><a href="{% url 'crm:customer_list' %}" class="nav-link">Customers</a></li>
@@ -94,7 +97,7 @@
                             </li>
                         {% endif %}
 
-                        {% if user.is_authenticated and "Manager" in user.profile.role %}
+                        {% if "Manager" in user.profile.role %}
                             <li class="nav-item">
                                 <a href="{% url 'crm:manager_dashboard' %}" class="nav-link text-warning fw-bold">
                                     <i class="fas fa-user-tie"></i> Manager Dashboard

@@ -508,19 +508,22 @@ def add_customer(request):
 @login_required
 def customer_list(request):
     """ Fetch customers based on user role:
-        - Executives see all customers.
-        - Salespersons see only their assigned customers.
-        - Managers see only customers within their department.
+        - Executives see all customers (filterable by department & salesperson).
+        - Managers see only customers within their department (filterable by salesperson).
+        - Salespersons see only their assigned customers (no filters).
     """
-
     user = request.user
+    selected_department = request.GET.get("department", "")
+    selected_salesperson = request.GET.get("salesperson", "")
 
+    # Role-based customer access
     if user.profile.role == Role.EXECUTIVE:
-        customers = Customer.objects.all()  # ✅ Executives see all customers
+        customers = Customer.objects.all()  # ✅ Executives see everything
+
     elif user.profile.role == Role.SALESPERSON:
-        customers = Customer.objects.filter(salesperson=user.salesperson)  # ✅ Salespersons see only their own
-    else:
-        # ✅ Managers see only customers in their assigned department
+        customers = Customer.objects.filter(salesperson=user.salesperson)  # ✅ Salespeople see only their own
+
+    else:  # ✅ Managers see only their department
         department_mapping = {
             Role.MANAGER_MASS_MARKET: Customer.MASS_MARKET,
             Role.MANAGER_MM2: Customer.MM2,
@@ -534,31 +537,65 @@ def customer_list(request):
         else:
             customers = Customer.objects.none()  # 🚫 No access if no valid department
 
+    # Apply filters (Executives & Managers)
+    if user.profile.role == Role.EXECUTIVE:
+        if selected_department:
+            customers = customers.filter(department=selected_department)
+        if selected_salesperson:
+            customers = customers.filter(salesperson__id=selected_salesperson)
+
+    elif "Manager" in user.profile.role:
+        if selected_salesperson:
+            customers = customers.filter(salesperson__id=selected_salesperson)
+
     # ✅ Group customers by department & order alphabetically
     grouped_customers = defaultdict(list)
     for customer in customers.order_by("department", "name"):
         grouped_customers[customer.department].append(customer)
 
-    return render(request, "crm/customer_list.html", {"grouped_customers": dict(grouped_customers)})
+    # ✅ Department & Salesperson Filters
+    department_choices = dict(Customer.DEPARTMENT_CHOICES)
+
+    if user.profile.role == Role.EXECUTIVE:
+        available_salespeople = Salesperson.objects.filter(
+            customers__isnull=False
+        ).distinct().order_by("user__first_name", "user__last_name")
+
+    elif "Manager" in user.profile.role:
+        available_salespeople = Salesperson.objects.filter(
+            customers__department=department
+        ).distinct().order_by("user__first_name", "user__last_name")
+
+    else:
+        available_salespeople = []
+
+    return render(request, "crm/customer_list.html", {
+        "grouped_customers": dict(grouped_customers),
+        "department_choices": department_choices,
+        "available_salespeople": available_salespeople,
+        "selected_department": selected_department,
+        "selected_salesperson": selected_salesperson,
+    })
 
 @login_required
 def contact_list(request):
-    """ Groups contacts by department → customer → ordered contacts based on user roles. """
-
+    """ Fetch contacts based on user role:
+        - Executives see all contacts (filterable by department & salesperson).
+        - Managers see only contacts within their department (filterable by salesperson).
+        - Salespeople see only their assigned contacts (no filters).
+    """
     user = request.user
+    selected_department = request.GET.get("department", "")
+    selected_salesperson = request.GET.get("salesperson", "")
 
-    # ✅ Executives see all contacts
+    # Role-based customer access
     if user.profile.role == Role.EXECUTIVE:
-        customers = Customer.objects.prefetch_related("contacts").order_by("department", "name")
+        customers = Customer.objects.prefetch_related("contacts")  # ✅ Executives see everything
 
-    # ✅ Salespersons see only their assigned customers' contacts
     elif user.profile.role == Role.SALESPERSON:
-        customers = Customer.objects.filter(salesperson=user.salesperson) \
-                                    .prefetch_related("contacts") \
-                                    .order_by("department", "name")
+        customers = Customer.objects.filter(salesperson=user.salesperson).prefetch_related("contacts")  # ✅ Salespeople see only their own
 
-    # ✅ Managers see only customers within their assigned department
-    else:
+    else:  # ✅ Managers see only their department
         department_mapping = {
             Role.MANAGER_MASS_MARKET: Customer.MASS_MARKET,
             Role.MANAGER_MM2: Customer.MM2,
@@ -568,28 +605,60 @@ def contact_list(request):
         department = department_mapping.get(user.profile.role)
 
         if department:
-            customers = Customer.objects.filter(department=department).prefetch_related("contacts").order_by("department", "name")
+            customers = Customer.objects.filter(department=department).prefetch_related("contacts")
         else:
             customers = Customer.objects.none()  # 🚫 No access if no valid department
+
+    # Apply filters (Executives & Managers)
+    if user.profile.role == Role.EXECUTIVE:
+        if selected_department:
+            customers = customers.filter(department=selected_department)
+        if selected_salesperson:
+            customers = customers.filter(salesperson__id=selected_salesperson)
+
+    elif "Manager" in user.profile.role:
+        if selected_salesperson:
+            customers = customers.filter(salesperson__id=selected_salesperson)
 
     grouped_contacts = defaultdict(list)
 
     # ✅ Organize customers under their respective departments
-    for customer in customers:
+    for customer in customers.order_by("department", "name"):
         sorted_contacts = sorted(customer.contacts.all(), key=lambda contact: contact.name.lower())  # Alphabetical sorting
 
         for contact in sorted_contacts:
             # ✅ Format birthday properly
             birthday_month = int(contact.birthday_month) if contact.birthday_month else None
             birthday_day = contact.birthday_day
-
             clean_birthday = f"{MONTH_NAMES.get(birthday_month, 'Unknown')}, {birthday_day}" if birthday_month and birthday_day else "Not provided"
             contact.clean_birthday = clean_birthday  # Attach formatted birthday
 
         customer.sorted_contacts = sorted_contacts  # Store sorted contacts
         grouped_contacts[customer.department].append(customer)  # Group by department
 
-    return render(request, "crm/contact_list.html", {"grouped_contacts": dict(grouped_contacts)})
+    # ✅ Department & Salesperson Filters
+    department_choices = dict(Customer.DEPARTMENT_CHOICES)
+
+    if user.profile.role == Role.EXECUTIVE:
+        available_salespeople = Salesperson.objects.filter(
+            customers__isnull=False
+        ).distinct().order_by("user__first_name", "user__last_name")
+
+    elif "Manager" in user.profile.role:
+        available_salespeople = Salesperson.objects.filter(
+            customers__department=department
+        ).distinct().order_by("user__first_name", "user__last_name")
+
+    else:
+        available_salespeople = []
+
+    return render(request, "crm/contact_list.html", {
+        "grouped_contacts": dict(grouped_contacts),
+        "department_choices": department_choices,
+        "available_salespeople": available_salespeople,
+        "selected_department": selected_department,
+        "selected_salesperson": selected_salesperson,
+    })
 
 class ContactListView(LoginRequiredMixin, ListView):
     model = Contact

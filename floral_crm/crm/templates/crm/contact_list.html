@@ -6,14 +6,52 @@
 <div class="container py-5">
     <h1 class="text-center display-4 font-weight-bold mb-4">Contacts</h1>
 
-    <!-- Add Contact Button -->
+    <!-- Filtering Options -->
+    <form method="get" class="row mb-4">
+        {% if user.profile.role == "Executive" %}
+        <!-- Department Filter -->
+        <div class="col-md-5">
+            <label for="departmentFilter" class="form-label">Filter by Department:</label>
+            <select name="department" id="departmentFilter" class="form-select" onchange="this.form.submit()">
+                <option value="">All Departments</option>
+                {% for key, value in department_choices.items %}
+                    <option value="{{ key }}" {% if selected_department == key %}selected{% endif %}>
+                        {{ value }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+
+        {% if user.profile.role == "Executive" or "Manager" in user.profile.role %}
+        <!-- Salesperson Filter -->
+        <div class="col-md-5">
+            <label for="salespersonFilter" class="form-label">Filter by Salesperson:</label>
+            <select name="salesperson" id="salespersonFilter" class="form-select" onchange="this.form.submit()">
+                <option value="">All Salespeople</option>
+                {% for salesperson in available_salespeople %}
+                    <option value="{{ salesperson.id }}" {% if selected_salesperson|slugify == salesperson.id|slugify %}selected{% endif %}>
+                        {{ salesperson.user.get_full_name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+
+        <!-- Reset Filters Button -->
+        <div class="col-md-2 d-flex align-items-end">
+            <a href="{% url 'crm:contact_list' %}" class="btn btn-outline-secondary w-100">Reset Filters</a>
+        </div>
+    </form>
+
+    <!-- Add Contact Button (✅ Now Back) -->
     <div class="text-center mt-4">
-        <a href="{% url 'crm:add_contact' %}?customer_id={{ customer.id }}" class="btn btn-primary btn-lg">
+        <a href="{% url 'crm:add_contact' %}" class="btn btn-primary btn-lg">
             <i class="fas fa-user-plus"></i> Add Contact
         </a>
     </div>
 
-    <!-- Group Contacts by Department & Then by Customer -->
+    <!-- Group Contacts by Department & Customer -->
     {% if grouped_contacts %}
         {% for department, customers in grouped_contacts.items %}
             <div class="mb-5">
@@ -24,7 +62,7 @@
                     <div class="mb-4">
                         <h3 class="text-dark">{{ customer.name }}</h3>
                         <div class="row">
-                            {% for contact in customer.contacts.all|dictsort:"name" %}
+                            {% for contact in customer.sorted_contacts %}
                                 <div class="col-md-6 col-lg-4 mb-4">
                                     <div class="card shadow-sm h-100">
                                         <div class="card-body">
@@ -71,10 +109,4 @@
         <a href="{% url 'crm:export_contacts' %}" class="btn btn-success btn-lg">Export Contacts as CSV</a>
     </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-    // Example of dynamic interactivity (if required)
-</script>
 {% endblock %}
