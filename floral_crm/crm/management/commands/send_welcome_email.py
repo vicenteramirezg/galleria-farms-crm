@@ -1,36 +1,36 @@
 from django.core.management.base import BaseCommand
 from django.core.mail import send_mail
-from django.contrib.auth.models import User
+from django.contrib.sites.shortcuts import get_current_site
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
 from django.template.loader import render_to_string
 from django.contrib.auth.tokens import default_token_generator
 from django.conf import settings
+from crm.models import Salesperson  # ✅ Import the correct model
+
 
 class Command(BaseCommand):
-    help = "Send a welcome email with password reset link to a specific user"
+    help = "Send a welcome email with password reset link to a specific salesperson"
 
     def add_arguments(self, parser):
-        parser.add_argument("email", type=str, help="The email of the user to send the welcome email to")
+        parser.add_argument("email", type=str, help="The email of the salesperson to send the welcome email to")
 
     def handle(self, *args, **kwargs):
         email = kwargs["email"]
         try:
-            user = User.objects.get(email=email)
+            salesperson = Salesperson.objects.select_related("user").get(user__email=email)
+            user = salesperson.user  # ✅ Get the associated User
 
             # Generate password reset token
             uid = urlsafe_base64_encode(force_bytes(user.pk))
             token = default_token_generator.make_token(user)
-            reset_link = f"https://{settings.ALLOWED_HOSTS[0]}/reset/{uid}/{token}/"  # ✅ Force HTTPS
-
-            # ✅ Get sender email dynamically from environment variables
-            sender_email = settings.DEFAULT_FROM_EMAIL
+            reset_link = f"https://{settings.ALLOWED_HOSTS[0]}/reset/{uid}/{token}/"
 
             # Render email content
-            subject = "🌟 Welcome to Galleria Farms CRM - Set Your Password"
+            subject = "🚀 Welcome to Galleria Farms CRM - Set Your Password"
             html_message = render_to_string("registration/welcome_email.html", {
                 "user": user,
-                "reset_link": reset_link
+                "reset_link": reset_link,
             })
             plain_message = f"""
 Hello {user.get_full_name()},
@@ -48,17 +48,17 @@ Best,
 Galleria Farms CRM Team
             """
 
-            # ✅ Send email (HTML & Plain Text)
+            # Send email
             send_mail(
                 subject,
                 plain_message,
-                sender_email,  # ✅ Uses environment variable DEFAULT_FROM_EMAIL
+                settings.DEFAULT_FROM_EMAIL,
                 [user.email],
                 fail_silently=False,
-                html_message=html_message,  # Sends both plain & HTML versions
+                html_message=html_message,  # ✅ Sends both plain & HTML versions
             )
 
-            self.stdout.write(self.style.SUCCESS(f"✅ Welcome email sent to {user.email} from {sender_email}"))  # ✅ Keep for CLI usage
+            self.stdout.write(self.style.SUCCESS(f"✅ Welcome email sent to {user.email}"))
 
-        except User.DoesNotExist:
-            self.stdout.write(self.style.ERROR(f"❌ No user found with email: {email}"))  # ✅ Handle missing user gracefully
+        except Salesperson.DoesNotExist:
+            self.stdout.write(self.style.ERROR(f"❌ No salesperson found with email: {email}"))

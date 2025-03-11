@@ -1,24 +1,31 @@
-from django.contrib import admin
-from django.contrib import messages
+from django.contrib import admin, messages
 from django.conf import settings
-from .models import Salesperson, Customer, Contact, Profile
-from crm.management.commands.send_welcome_email import Command as SendWelcomeCommand  # ✅ Import the management command
+from django.core.mail import send_mail
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+from django.template.loader import render_to_string
+from django.contrib.auth.tokens import default_token_generator
+from crm.models import Salesperson, Customer, Contact, Profile
+from crm.management.commands.send_welcome_email import Command as SendWelcomeCommand  # ✅ Import your existing command
+
 
 # ✅ Admin Action: Send Welcome Email for Salespersons
 def send_welcome_email_admin(modeladmin, request, queryset):
     """ Admin action to trigger the send_welcome_email command for selected Salespersons """
     command = SendWelcomeCommand()  # Initialize the management command class
-    count = 0  # Track how many emails were sent
+    count = 0  # Track emails sent
 
     for salesperson in queryset:
-        user = salesperson.user  # ✅ Get the associated User from Salesperson model
-        if user.email:  # Ensure the user has a valid email
-            command.handle(email=user.email)  # ✅ Call handle() and pass the email
+        user = salesperson.user  # ✅ Get associated User
+        if user.email:  # ✅ Ensure valid email
+            command.handle(email=user.email)  # ✅ Trigger email
             count += 1
 
     modeladmin.message_user(request, f"✅ Welcome emails sent to {count} salesperson(s)!", messages.SUCCESS)
 
+
 send_welcome_email_admin.short_description = "📩 Send Welcome Email to Selected Salespersons"
+
 
 # ✅ Register Salesperson Model with Custom Admin Action
 @admin.register(Salesperson)
