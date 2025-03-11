@@ -1,81 +1,108 @@
-{% extends 'crm/base.html' %}
+{% extends "crm/base.html" %}
 
-{% block title %}Sign Up{% endblock %}
+{% block title %}Sign Up - Galleria Farms CRM{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <h2 class="text-center mb-4">Sign Up</h2>
+<div class="container py-5">
+    <div class="form-container bg-light p-4 rounded shadow-sm mx-auto" style="max-width: 600px;">
+        <h2 class="mb-4 text-center">Sign Up</h2>
 
-            <!-- Show error messages -->
-            {% if form.errors %}
-                <div class="alert alert-danger">
-                    <ul>
-                        {% for field in form %}
-                            {% for error in field.errors %}
-                                <li><strong>{{ field.label }}:</strong> {{ error }}</li>
-                            {% endfor %}
+        <!-- Show error messages -->
+        {% if form.errors %}
+            <div class="alert alert-danger mx-auto" style="max-width: 400px;">
+                <ul class="mb-0">
+                    {% for field in form %}
+                        {% for error in field.errors %}
+                            <li><strong>{{ field.label }}:</strong> {{ error }}</li>
                         {% endfor %}
-                        {% for error in form.non_field_errors %}
-                            <li>{{ error }}</li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            {% endif %}
+                    {% endfor %}
+                    {% for error in form.non_field_errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
 
-            <form method="POST">
-                {% csrf_token %}
-                
-                <!-- Username (Used as Email) -->
-                <div class="form-group">
-                    <label for="id_username">Email</label>
-                    <input type="email" name="username" class="form-control" id="id_username" 
-                           value="{{ form.username.value|default_if_none:'' }}" required>
-                </div>
+        <form method="POST" class="mx-auto" style="max-width: 400px;">
+            {% csrf_token %}
 
-                <div class="form-group">
-                    <label for="id_first_name">First Name</label>
-                    <input type="text" name="first_name" class="form-control" id="id_first_name" 
-                           value="{{ form.first_name.value|default_if_none:'' }}" required>
-                </div>
+            <!-- Email (Used as Username) -->
+            <div class="mb-3 d-flex align-items-center justify-content-center">
+                <label for="id_username" class="form-label font-weight-bold me-2" style="min-width: 150px;">Email:</label>
+                <input type="email" name="username" class="form-control" id="id_username" 
+                       value="{{ form.username.value|default_if_none:'' }}" required>
+            </div>
 
-                <div class="form-group">
-                    <label for="id_last_name">Last Name</label>
-                    <input type="text" name="last_name" class="form-control" id="id_last_name" 
-                           value="{{ form.last_name.value|default_if_none:'' }}" required>
-                </div>
+            <!-- First Name -->
+            <div class="mb-3 d-flex align-items-center justify-content-center">
+                <label for="id_first_name" class="form-label font-weight-bold me-2" style="min-width: 150px;">First Name:</label>
+                <input type="text" name="first_name" class="form-control" id="id_first_name" 
+                       value="{{ form.first_name.value|default_if_none:'' }}" required>
+            </div>
 
-                <!-- Phone input field with intl-tel-input -->
-                <div class="form-group">
-                    <label for="id_phone">Phone Number</label>
-                    <input type="tel" name="phone" class="form-control" id="id_phone" 
-                           value="{{ form.phone.value|default_if_none:'' }}" required>
-                </div>
+            <!-- Last Name -->
+            <div class="mb-3 d-flex align-items-center justify-content-center">
+                <label for="id_last_name" class="form-label font-weight-bold me-2" style="min-width: 150px;">Last Name:</label>
+                <input type="text" name="last_name" class="form-control" id="id_last_name" 
+                       value="{{ form.last_name.value|default_if_none:'' }}" required>
+            </div>
 
-                <div class="form-group">
-                    <label for="id_password1">Password</label>
-                    <input type="password" name="password1" class="form-control" id="id_password1" required>
-                </div>
-                <div class="form-group">
-                    <label for="id_password2">Confirm Password</label>
-                    <input type="password" name="password2" class="form-control" id="id_password2" required>
-                </div>
+            <!-- Phone Number -->
+            <div class="mb-3 d-flex align-items-center justify-content-center">
+                <label for="id_phone" class="form-label font-weight-bold me-2" style="min-width: 150px;">Phone:</label>
+                <input type="tel" id="id_phone" class="form-control" style="max-width: 200px;">
+                <input type="hidden" id="id_phone_full" name="phone">
+            </div>
 
-                <button type="submit" class="btn btn-primary btn-block">Sign Up</button>
-            </form>
-        </div>
+            <!-- Password -->
+            <div class="mb-3 d-flex align-items-center justify-content-center">
+                <label for="id_password1" class="form-label font-weight-bold me-2" style="min-width: 150px;">Password:</label>
+                <input type="password" name="password1" class="form-control" id="id_password1" required>
+            </div>
+
+            <!-- Confirm Password -->
+            <div class="mb-3 d-flex align-items-center justify-content-center">
+                <label for="id_password2" class="form-label font-weight-bold me-2" style="min-width: 150px;">Confirm Password:</label>
+                <input type="password" name="password2" class="form-control" id="id_password2" required>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="text-center mt-4">
+                <button type="submit" class="btn btn-primary btn-lg">Sign Up</button>
+            </div>
+
+            <!-- Back to Login -->
+            <div class="text-center mt-4">
+                <a href="{% url 'login' %}" class="btn btn-secondary btn-lg">Back to Login</a>
+            </div>
+        </form>
     </div>
 </div>
 
-<!-- Load intl-tel-input for country codes -->
+<!-- Load intl-tel-input for phone formatting -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/css/intlTelInput.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/intlTelInput.min.js"></script>
 
+<!-- Custom CSS for Consistent Form Styling -->
+<style>
+    .form-container {
+        max-width: 500px;
+        margin: auto;
+    }
+
+    .d-flex.justify-content-center {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+    }
+</style>
+
+<!-- JavaScript to Handle Phone Formatting & Ensure Proper Submission -->
 <script>
     document.addEventListener("DOMContentLoaded", function() {
         var phoneInput = document.querySelector("#id_phone");
-        var usernameInput = document.querySelector("#id_username");
+        var hiddenInput = document.querySelector("#id_phone_full");
 
         var iti = window.intlTelInput(phoneInput, {
             initialCountry: "us",
@@ -84,8 +111,8 @@
             utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/utils.js"
         });
 
-        // Format phone input dynamically as XXX-XXX-XXXX
-        phoneInput.addEventListener("input", function(event) {
+        // Format phone number as user types
+        phoneInput.addEventListener("input", function() {
             let phoneNumber = phoneInput.value.replace(/\D/g, ''); // Remove non-numeric characters
             if (phoneNumber.length > 6) {
                 phoneNumber = phoneNumber.replace(/(\d{3})(\d{3})(\d{0,4})/, "$1-$2-$3");
@@ -95,17 +122,22 @@
             phoneInput.value = phoneNumber;
         });
 
-        // Ensure the phone number is submitted with the "+" sign
+        // Ensure hidden input is updated whenever the user types
+        phoneInput.addEventListener("input", function() {
+            var fullPhoneNumber = iti.getNumber();
+            hiddenInput.value = fullPhoneNumber || "";
+        });
+
+        // Before form submission, update hidden input again
         document.querySelector("form").addEventListener("submit", function(event) {
-            var fullPhoneNumber = iti.getNumber();  // Get full international number
-            if (!fullPhoneNumber) {
-                event.preventDefault();  // Stop form submission
+            var fullPhoneNumber = iti.getNumber();
+            if (!fullPhoneNumber.trim()) {
+                event.preventDefault();
                 alert("Please enter a valid phone number.");
                 return;
             }
-            phoneInput.value = fullPhoneNumber;  // Ensure "+1" or other country code is included
+            hiddenInput.value = fullPhoneNumber;
         });
     });
 </script>
-
 {% endblock %}
