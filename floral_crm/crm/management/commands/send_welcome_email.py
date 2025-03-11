@@ -7,6 +7,7 @@ from django.template.loader import render_to_string
 from django.contrib.auth.tokens import default_token_generator
 from django.conf import settings
 from crm.models import Salesperson  # ✅ Import the correct model
+from email.utils import formataddr  # ✅ Import for correct email formatting
 
 
 class Command(BaseCommand):
@@ -25,6 +26,9 @@ class Command(BaseCommand):
             uid = urlsafe_base64_encode(force_bytes(user.pk))
             token = default_token_generator.make_token(user)
             reset_link = f"https://{settings.ALLOWED_HOSTS[0]}/reset/{uid}/{token}/"
+
+            # ✅ Properly formatted sender email
+            from_email = formataddr(("Galleria Farms Data Command CRM", settings.DEFAULT_FROM_EMAIL))  # ✅ Correctly formats the sender
 
             # Render email content
             subject = "🚀 Welcome to Galleria Farms CRM - Set Your Password"
@@ -52,10 +56,10 @@ Galleria Farms CRM Team
             send_mail(
                 subject,
                 plain_message,
-                settings.DEFAULT_FROM_EMAIL,
+                from_email,  # ✅ Fixed sender
                 [user.email],
                 fail_silently=False,
-                html_message=html_message,  # ✅ Sends both plain & HTML versions
+                html_message=html_message,
             )
 
             self.stdout.write(self.style.SUCCESS(f"✅ Welcome email sent to {user.email}"))
