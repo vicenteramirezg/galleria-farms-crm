@@ -1,21 +1,37 @@
 from django.contrib import admin
+from django.core.mail import send_mail
+from django.conf import settings
 from .models import Salesperson, Customer, Contact, Profile
+from crm.management.commands.send_welcome_email import Command as SendWelcomeCommand  # ✅ Import your existing command
 
-# ✅ Register Profile Model
-@admin.register(Profile)
-class ProfileAdmin(admin.ModelAdmin):
-    list_display = ('user', 'role', 'created_at', 'updated_at', 'created_by', 'updated_by')
-    list_filter = ('role', 'created_at')
-    search_fields = ('user__username', 'user__email', 'role')
-    readonly_fields = ('created_at', 'updated_at', 'created_by', 'updated_by')  # Prevents manual edits
-    ordering = ('user__username',)
+# ✅ Admin Action: Send Welcome Email for Salespersons
+def send_welcome_email_admin(modeladmin, request, queryset):
+    """ Admin action to trigger the existing send_welcome_email command for selected Salespersons """
+    command = SendWelcomeCommand()  # Initialize the management command class
+    for salesperson in queryset:
+        user = salesperson.user  # ✅ Get the associated User from Salesperson model
+        command.send_welcome_email(user)  # ✅ Call the existing function
 
-# ✅ Register Salesperson Model
+    modeladmin.message_user(request, f"✅ Welcome emails sent to {queryset.count()} salesperson(s)!")
+
+send_welcome_email_admin.short_description = "📩 Send Welcome Email to Selected Salespersons"
+
+# ✅ Register Salesperson Model with Custom Admin Action
 @admin.register(Salesperson)
 class SalespersonAdmin(admin.ModelAdmin):
     list_display = ('user', 'phone', 'created_at', 'updated_at', 'created_by', 'updated_by')
     search_fields = ('user__username', 'user__email', 'phone')
     list_filter = ('created_at',)
+    readonly_fields = ('created_at', 'updated_at', 'created_by', 'updated_by')
+    ordering = ('user__username',)
+    actions = [send_welcome_email_admin]  # ✅ Attach the action to Salespersons!
+
+# ✅ Register Other Models (No Changes Needed)
+@admin.register(Profile)
+class ProfileAdmin(admin.ModelAdmin):
+    list_display = ('user', 'role', 'created_at', 'updated_at', 'created_by', 'updated_by')
+    list_filter = ('role', 'created_at')
+    search_fields = ('user__username', 'user__email', 'role')
     readonly_fields = ('created_at', 'updated_at', 'created_by', 'updated_by')
     ordering = ('user__username',)
 
