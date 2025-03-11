@@ -56,7 +56,7 @@ def send_birthday_email(salesperson, contact):
             <div class="content">
                 <h2>🎉 Don't forget to reach out!</h2>
                 <p>Hello <strong>{salesperson.user.first_name}</strong>,</p>
-                <p>Today is <strong>{contact.name}</strong>'s birthday! 🎂</p>
+                <p>Today is <strong>{contact.name} ({contact.customer.name})</strong>'s birthday! 🎂</p>
                 <p>Take a moment to send them a quick message or give them a call.</p>
 
                 <div class="button-container">
