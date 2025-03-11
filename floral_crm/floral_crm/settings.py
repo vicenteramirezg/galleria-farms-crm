@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "whitenoise.runserver_nostatic",
+    "django_celery_beat",
 ]
 
 # ✅ Middleware
@@ -180,3 +181,14 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 if DEBUG:
     import mimetypes
     mimetypes.add_type("image/x-icon", ".ico", True)
+
+# Celery settings
+if IS_PRODUCTION:
+    CELERY_BROKER_URL = os.getenv('REDIS_URL')
+    CELERY_TASK_ALWAYS_EAGER = False  # Disable eager execution (run tasks asynchronously)
+else:
+    CELERY_BROKER_URL = 'memory://'
+    CELERY_TASK_ALWAYS_EAGER = True
+
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'

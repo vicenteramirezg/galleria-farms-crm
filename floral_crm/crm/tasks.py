@@ -1,0 +1,20 @@
+from celery import shared_task
+from django.utils.timezone import now
+from crm.models import Contact
+from crm.utils.email_utils import send_birthday_email
+
+@shared_task
+def send_birthday_reminders():
+    """ Celery task to send birthday reminders to salespeople """
+    today = now().date()
+    contacts = Contact.objects.filter(birthday_month=today.month, birthday_day=today.day)
+
+    if not contacts.exists():
+        return "No birthdays today."
+
+    for contact in contacts:
+        salesperson = contact.customer.salesperson
+        if salesperson and salesperson.user and salesperson.user.email:
+            send_birthday_email(salesperson, contact)
+
+    return f"Sent {contacts.count()} birthday reminder emails"
