@@ -39,24 +39,31 @@
             </div>
             {% endif %}
 
-            <!-- Contact Status Filter & Reset Button -->
-            <div class="col-md-5 d-flex">
-                <div class="w-75">
-                    <label for="statusFilter" class="form-label">Contact Status:</label>
-                    <select name="status" id="statusFilter" class="form-select" onchange="this.form.submit()">
-                        <option value="active" {% if selected_status == "active" %}selected{% endif %}>Active</option>
-                        <option value="inactive" {% if selected_status == "inactive" %}selected{% endif %}>Inactive</option>
-                        <option value="all" {% if selected_status == "all" %}selected{% endif %}>All</option>
-                    </select>
-                </div>
-                <div class="w-25 d-flex align-items-end">
-                    <a href="{% url 'crm:contact_list' %}" class="btn btn-outline-secondary">Reset Filters</a>
-                </div>
+            <!-- Contact Status Filter -->
+            <div class="col-md-4">
+                <label for="statusFilter" class="form-label">Contact Status:</label>
+                <select name="status" id="statusFilter" class="form-select" onchange="this.form.submit()">
+                    <option value="active" {% if selected_status == "active" %}selected{% endif %}>Active</option>
+                    <option value="inactive" {% if selected_status == "inactive" %}selected{% endif %}>Inactive</option>
+                    <option value="all" {% if selected_status == "all" %}selected{% endif %}>All</option>
+                </select>
+            </div>
+
+            <!-- Contact Search Bar -->
+            <div class="col-md-5">
+                <label for="searchInput" class="form-label">Search Contact:</label>
+                <input type="text" name="search" id="searchInput" class="form-control" 
+                       placeholder="Type a name..." value="{{ search_query }}" oninput="this.form.submit()">
+            </div>
+
+            <!-- Reset Button -->
+            <div class="col-md-3 d-flex align-items-end">
+                <a href="{% url 'crm:contact_list' %}" class="btn btn-outline-secondary w-100">Reset Filters</a>
             </div>
         </form>
     </div>
 
-    <!-- Add Contact Button (✅ Now Back) -->
+    <!-- Add Contact Button -->
     <div class="text-center mt-4">
         <a href="{% url 'crm:add_contact' %}" class="btn btn-primary btn-lg">
             <i class="fas fa-user-plus"></i> Add Contact

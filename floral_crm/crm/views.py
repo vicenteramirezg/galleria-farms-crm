@@ -517,6 +517,7 @@ def customer_list(request):
     user = request.user
     selected_department = request.GET.get("department", "")
     selected_salesperson = request.GET.get("salesperson", "")
+    search_query = request.GET.get("search", "").strip()
 
     # Role-based customer access
     if user.profile.role == Role.EXECUTIVE:
@@ -550,6 +551,9 @@ def customer_list(request):
         if selected_salesperson:
             customers = customers.filter(salesperson__id=selected_salesperson)
 
+    if search_query:
+        customers = customers.filter(name__icontains=search_query)
+
     # ✅ Group customers by department & order alphabetically
     grouped_customers = defaultdict(list)
     for customer in customers.order_by("department", "name"):
@@ -577,6 +581,7 @@ def customer_list(request):
         "available_salespeople": available_salespeople,
         "selected_department": selected_department,
         "selected_salesperson": selected_salesperson,
+        "search_query": search_query,
     })
 
 @login_required
@@ -587,6 +592,7 @@ def contact_list(request):
     selected_department = request.GET.get("department", "")
     selected_salesperson = request.GET.get("salesperson", "")
     selected_status = request.GET.get("status", "all")  # Default to "active" contacts
+    search_query = request.GET.get("search", "").strip()
 
     # Role-based customer access
     if user.profile.role == Role.EXECUTIVE:
@@ -627,6 +633,9 @@ def contact_list(request):
             contacts = contacts.filter(is_active=True)
         elif selected_status == "inactive":
             contacts = contacts.filter(is_active=False)
+        
+        if search_query:
+            contacts = contacts.filter(name__icontains=search_query)
 
         sorted_contacts = sorted(contacts, key=lambda contact: contact.name.lower())  # Alphabetical sorting
 
@@ -659,6 +668,7 @@ def contact_list(request):
         "selected_department": selected_department,
         "selected_salesperson": selected_salesperson,
         "selected_status": selected_status,  # Pass selected status to template
+        "search_query": search_query,
     })
 
 class ContactListView(LoginRequiredMixin, ListView):
