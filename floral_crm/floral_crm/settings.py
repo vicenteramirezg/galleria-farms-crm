@@ -86,9 +86,9 @@ SESSION_COOKIE_SECURE = True  # Ensures session cookies are sent over HTTPS
 
 # ✅ CSRF Trusted Origins
 CSRF_TRUSTED_ORIGINS = [
-    "https://galleria-farms-crm.up.railway.app",
     "https://crm.galleriafarms.com",
-    "https://galleriafarms.com"
+    "https://galleriafarms.com",
+    "https://galleria-farms-crm.up.railway.app",
 ]
 
 # ✅ Authentication Backends
