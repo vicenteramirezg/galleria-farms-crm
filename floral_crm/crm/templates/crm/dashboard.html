@@ -40,11 +40,13 @@
                 </select>
             </div>
             {% endif %}
-
+            
+            {% if user.profile.role == "Executive" or "Manager" in user.profile.role %}
             <!-- Reset Filters Button -->
             <div class="col-md-2 d-flex align-items-end">
                 <a href="{% url 'crm:dashboard' %}" class="btn btn-outline-secondary w-100">Reset Filters</a>
             </div>
+            {% endif %}
         </form>
     </div>
 
