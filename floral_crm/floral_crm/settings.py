@@ -189,8 +189,8 @@ if IS_PRODUCTION:
     CELERY_BROKER_URL = os.getenv('REDIS_URL')
     CELERY_TASK_ALWAYS_EAGER = False
 else:
-    CELERY_BROKER_URL = 'redis://localhost:6379/0'  # Use local Redis for dev
-    CELERY_TASK_ALWAYS_EAGER = False  # Enable worker in dev
+    CELERY_BROKER_URL = 'redis://localhost:6379/0'
+    CELERY_TASK_ALWAYS_EAGER = False
 
 CELERY_RESULT_BACKEND = "django-db"
 CELERY_RESULT_EXTENDED = True
@@ -199,7 +199,7 @@ CELERY_TASK_SERIALIZER = 'json'
 
 # Import Celery app
 from floral_crm.celery import app as celery_app
-CELERY_APP = celery_app  # For admin compatibility
+CELERY_APP = celery_app
 
 # Twilio settings
 TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
