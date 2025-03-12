@@ -100,31 +100,31 @@ def dashboard(request):
 
     # **Role-based Filtering**
     if user.profile.role == Role.EXECUTIVE:
-        customers = Customer.objects.all()
+        all_customers = Customer.objects.all()  # ✅ No limit for total sales calculation
     elif "Manager" in user.profile.role:
         department_name = user.profile.role.replace("Manager - ", "").lower()
-        customers = Customer.objects.filter(department=department_name)
+        all_customers = Customer.objects.filter(department=department_name)
     else:
-        customers = Customer.objects.filter(salesperson=salesperson)
+        all_customers = Customer.objects.filter(salesperson=salesperson)
 
     # **Apply Filters**
     if selected_department:
-        customers = customers.filter(department=selected_department)
+        all_customers = all_customers.filter(department=selected_department)
     if selected_salesperson:
         salesperson_id = User.objects.filter(id=selected_salesperson).values_list("salesperson__id", flat=True).first()
         if salesperson_id:
-            customers = customers.filter(salesperson_id=salesperson_id)
+            all_customers = all_customers.filter(salesperson_id=salesperson_id)
 
-    # **Limit Customers to 10 (Highest Estimated Sales)**
-    customers = customers.order_by("-estimated_yearly_sales")[:10]
-
-    # **Optimized Aggregations**
-    total_sales = customers.aggregate(Sum("estimated_yearly_sales"))["estimated_yearly_sales__sum"] or 0
-    total_contacts = Contact.objects.filter(customer__in=customers, is_active=True).count()
-    avg_relationship_score = Contact.objects.filter(customer__in=customers, is_active=True) \
+    # **Key Stats (Now Using All Customers)**
+    total_sales = all_customers.aggregate(Sum("estimated_yearly_sales"))["estimated_yearly_sales__sum"] or 0
+    total_contacts = Contact.objects.filter(customer__in=all_customers, is_active=True).count()
+    avg_relationship_score = Contact.objects.filter(customer__in=all_customers, is_active=True) \
         .aggregate(Avg("relationship_score"))["relationship_score__avg"] or 0
 
-    # **Optimize Customer Data Fetching**
+    # **Limit Displayed Customers to Top 10**
+    customers = all_customers.order_by("-estimated_yearly_sales")[:10]
+
+    # **Optimized Customer Data Fetching**
     customer_data = customers.annotate(
         num_contacts=Count("contacts", filter=Q(contacts__is_active=True)),
         avg_score=Avg("contacts__relationship_score", filter=Q(contacts__is_active=True))
@@ -137,7 +137,7 @@ def dashboard(request):
     future_date = today + timedelta(days=30)
 
     upcoming_birthdays = Contact.objects.filter(
-        customer__in=customers,
+        customer__in=all_customers,
         is_active=True,
     ).filter(
         Q(
@@ -165,11 +165,11 @@ def dashboard(request):
         available_salespeople = User.objects.filter(id=user.id)
 
     return render(request, "crm/dashboard.html", {
-        "customers": customer_data,
-        "total_sales": f"{total_sales:,.0f}",
-        "total_contacts": total_contacts,
+        "customers": customer_data,  # ✅ Only showing the top 10
+        "total_sales": f"{total_sales:,.0f}",  # ✅ Now sums all customers
+        "total_contacts": total_contacts,  # ✅ Now counts all active contacts
         "avg_relationship_score": round(avg_relationship_score, 2) if avg_relationship_score else "N/A",
-        "top_customers": customers,  # Already limited to top 10
+        "top_customers": customers,  # ✅ Already limited to top 10
         "upcoming_birthdays": upcoming_birthdays,
         "department_choices": department_choices,
         "available_salespeople": available_salespeople,
