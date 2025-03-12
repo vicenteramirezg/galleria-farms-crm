@@ -11,9 +11,6 @@ app = Celery('floral_crm')
 # Load settings from Django settings.py
 app.config_from_object('django.conf:settings', namespace='CELERY')
 
-# ✅ Manually import task modules to ensure Celery loads them
-import crm.tasks  # 🔥 Add this line to explicitly load tasks
-
 # Auto-discover tasks from all registered Django apps
 app.autodiscover_tasks()
 
