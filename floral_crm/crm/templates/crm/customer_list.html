@@ -60,6 +60,25 @@
         <a href="{% url 'crm:add_customer' %}" class="btn btn-primary btn-lg">Add Customer</a>
     </div>
 
+    <!-- Pagination Controls -->
+    {% if customers_paginated.paginator.num_pages > 1 %}
+    <div class="pagination justify-content-center mt-4">
+        <ul class="pagination">
+            {% if customers_paginated.has_previous %}
+                <li class="page-item"><a class="page-link" href="?page=1">&laquo; First</a></li>
+                <li class="page-item"><a class="page-link" href="?page={{ customers_paginated.previous_page_number }}">Previous</a></li>
+            {% endif %}
+
+            <li class="page-item active"><span class="page-link">Page {{ customers_paginated.number }} of {{ customers_paginated.paginator.num_pages }}</span></li>
+
+            {% if customers_paginated.has_next %}
+                <li class="page-item"><a class="page-link" href="?page={{ customers_paginated.next_page_number }}">Next</a></li>
+                <li class="page-item"><a class="page-link" href="?page={{ customers_paginated.paginator.num_pages }}">Last &raquo;</a></li>
+            {% endif %}
+        </ul>
+    </div>
+    {% endif %}
+
     <!-- Group Customers by Department in Table Format -->
     {% if grouped_customers %}
         {% for department, customers in grouped_customers.items %}

@@ -12,6 +12,7 @@ from django.views.generic import ListView, UpdateView, CreateView, DetailView
 from django.contrib.auth import login, logout
 from django.utils.decorators import method_decorator
 from django.contrib import messages
+from django.core.paginator import Paginator
 
 # Django database and utility imports
 from django.db.models import Sum, Avg, Count, Q
@@ -467,7 +468,7 @@ def add_customer(request):
 
 @login_required
 def customer_list(request):
-    """Optimized view for listing customers efficiently."""
+    """Highly optimized customer list view with indexing, pagination, and efficient queries."""
     user = request.user
     selected_department = request.GET.get("department", "").strip()
     selected_salesperson = request.GET.get("salesperson", "").strip()
@@ -502,21 +503,22 @@ def customer_list(request):
     # **🚀 Optimize Query Execution: Use `only()` to Load Necessary Fields**
     customers = customers.only("id", "name", "department", "salesperson_id")
 
-    # **🚀 Group Customers by Department (Efficient Processing)**
-    grouped_customers = defaultdict(list)
-    for customer in customers:
-        grouped_customers[customer.department].append(customer)
+    # **🚀 Use `select_related()` for Salesperson Optimization**
+    customers = customers.select_related("salesperson__user")
 
-    # **🚀 Optimize Department & Salesperson Query (Avoids Unnecessary Queries)**
-    department_choices = dict(Customer.DEPARTMENT_CHOICES)
+    # **🚀 Pagination (Avoids Loading Too Many Customers)**
+    paginator = Paginator(customers, 50)  # ✅ Show 50 customers per page
+    page_number = request.GET.get("page")
+    customers_paginated = paginator.get_page(page_number)
 
+    # **🚀 Optimize Salespeople Query**
     available_salespeople = Salesperson.objects.filter(
         customers__isnull=False
     ).distinct().only("id", "user__first_name", "user__last_name").order_by("user__first_name", "user__last_name")
 
     return render(request, "crm/customer_list.html", {
-        "grouped_customers": dict(grouped_customers),  # ✅ Now faster
-        "department_choices": department_choices,
+        "customers_paginated": customers_paginated,  # ✅ Use paginated results
+        "department_choices": dict(Customer.DEPARTMENT_CHOICES),
         "available_salespeople": available_salespeople,
         "selected_department": selected_department,
         "selected_salesperson": selected_salesperson,
