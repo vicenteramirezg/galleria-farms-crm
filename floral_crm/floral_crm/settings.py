@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "whitenoise.runserver_nostatic",
     "django_celery_beat",
+    "django_celery_results",
 ]
 
 # ✅ Middleware
@@ -195,10 +196,11 @@ else:
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 
-# Import celery_app only when needed
-def get_celery_app():
-    from floral_crm.celery import app
-    return app
+# Import Celery app
+from floral_crm.celery import app as celery_app
+
+# Optional: Make it available for Django admin
+CELERY_APP = celery_app
 
 # Twilio settings
 TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
