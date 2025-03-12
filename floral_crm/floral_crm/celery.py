@@ -17,16 +17,16 @@ app.config_from_object("django.conf:settings", namespace="CELERY")
 # Autodiscover tasks
 app.autodiscover_tasks(["crm"])
 
-# Define a function to register tasks after Django setup
-def register_tasks():
-    from crm.tasks import send_birthday_reminders, send_whatsapp_birthday_reminders
-    app.tasks.register(send_birthday_reminders)
-    app.tasks.register(send_whatsapp_birthday_reminders)
-    logger.info("Registered tasks at startup: %s", list(app.tasks.keys()))
+# Explicitly import and register tasks at module level
+from crm.tasks import send_birthday_reminders, send_whatsapp_birthday_reminders
+app.tasks.register(send_birthday_reminders)
+app.tasks.register(send_whatsapp_birthday_reminders)
+logger.info("Registered tasks at module load: %s", list(app.tasks.keys()))
 
-# Call this after Django is ready (handled by Celery’s app finalization)
-app.finalize = register_tasks  # Hook into Celery’s finalization
-
+# Debug task
 @app.task(bind=True, ignore_result=True)
 def debug_task(self):
     logger.info(f"Debug task request: {self.request!r}")
+
+# Export the app
+__all__ = ["app"]

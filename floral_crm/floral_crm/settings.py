@@ -187,22 +187,22 @@ if DEBUG:
 # Celery settings
 if IS_PRODUCTION:
     CELERY_BROKER_URL = os.getenv('REDIS_URL')
-    CELERY_TASK_ALWAYS_EAGER = False  # Disable eager execution (run tasks asynchronously)
+    CELERY_TASK_ALWAYS_EAGER = False
 else:
-    CELERY_BROKER_URL = 'memory://'
-    CELERY_TASK_ALWAYS_EAGER = True
-    CELERY_TASK_EAGER_PROPAGATES = True
+    CELERY_BROKER_URL = 'redis://localhost:6379/0'  # Use local Redis for dev
+    CELERY_TASK_ALWAYS_EAGER = False  # Enable worker in dev
 
+CELERY_RESULT_BACKEND = "django-db"
+CELERY_RESULT_EXTENDED = True
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 
 # Import Celery app
 from floral_crm.celery import app as celery_app
-
-# Optional: Make it available for Django admin
-CELERY_APP = celery_app
+CELERY_APP = celery_app  # For admin compatibility
 
 # Twilio settings
 TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
 TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
 TWILIO_WHATSAPP_NUMBER = os.getenv("TWILIO_WHATSAPP_NUMBER")  # e.g., "whatsapp:+14155238886"
+
