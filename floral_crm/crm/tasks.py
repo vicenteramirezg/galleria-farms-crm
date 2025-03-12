@@ -7,8 +7,8 @@ MANAGER_PHONE = "+13055190251"
 
 # ✅ Lazy model import to prevent "Apps aren't loaded yet" error
 def get_contact_model():
-    from crm.models import Contact
-    return Contact
+    from django.apps import apps
+    return apps.get_model("crm", "Contact")
 
 @shared_task(name="crm.tasks.send_birthday_reminders")
 def send_birthday_reminders():

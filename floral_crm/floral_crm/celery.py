@@ -1,12 +1,17 @@
 from __future__ import absolute_import, unicode_literals
 import os
+import django
 from celery import Celery
 import logging
 
 logger = logging.getLogger(__name__)
 
-# ✅ Set default Django settings module
+# ✅ Set the default Django settings module
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "floral_crm.settings")
+
+# ✅ Initialize Django only when Celery is running
+if not os.getenv("CELERY_WORKER_RUNNING"):
+    django.setup()
 
 # ✅ Initialize Celery app
 app = Celery("floral_crm")
@@ -14,8 +19,8 @@ app = Celery("floral_crm")
 # ✅ Load settings from Django settings.py
 app.config_from_object("django.conf:settings", namespace="CELERY")
 
-# ✅ Auto-discover tasks from all installed Django apps
-app.autodiscover_tasks()
+# ✅ Explicitly discover tasks inside `crm`
+app.autodiscover_tasks(["crm"])
 
 @app.task(bind=True, ignore_result=True)
 def debug_task(self):
