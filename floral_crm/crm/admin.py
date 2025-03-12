@@ -49,9 +49,9 @@ class ProfileAdmin(admin.ModelAdmin):
 # ✅ Register Customer Model
 @admin.register(Customer)
 class CustomerAdmin(admin.ModelAdmin):
-    list_display = ('name', 'estimated_yearly_sales', 'salesperson', 'created_at', 'updated_at', 'created_by', 'updated_by')
-    search_fields = ('name', 'salesperson__user__username', 'salesperson__phone')
-    list_filter = ('salesperson', 'created_at')
+    list_display = ('name', 'department', 'estimated_yearly_sales', 'salesperson', 'created_at', 'updated_at', 'created_by', 'updated_by')
+    search_fields = ('name', 'department', 'salesperson__user__username', 'salesperson__phone')
+    list_filter = ('department', 'salesperson', 'created_at')
     readonly_fields = ('created_at', 'updated_at', 'created_by', 'updated_by')
     ordering = ('name',)
 
