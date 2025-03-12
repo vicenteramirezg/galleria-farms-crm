@@ -2,6 +2,7 @@ from __future__ import absolute_import, unicode_literals
 import os
 from celery import Celery
 import logging
+from django.apps import apps
 
 logger = logging.getLogger(__name__)
 
@@ -22,17 +23,12 @@ app.autodiscover_tasks(["crm"])
 def debug_task(self):
     logger.info(f"Debug task request: {self.request!r}")
 
-# Delay task registration until Django is ready
-def register_celery_tasks():
+# Register tasks after Django apps are ready
+if apps.ready:  # Check if Django apps are initialized
     from crm.tasks import send_birthday_reminders, send_whatsapp_birthday_reminders
     app.tasks.register(send_birthday_reminders)
     app.tasks.register(send_whatsapp_birthday_reminders)
-    logger.info("Registered tasks: %s", list(app.tasks.keys()))
-
-# Hook into Celery’s setup process
-@app.on_after_configure.connect
-def setup_tasks(sender, **kwargs):
-    register_celery_tasks()
+    logger.info("Registered tasks at module load: %s", list(app.tasks.keys()))
 
 # Export the app
 __all__ = ["app"]
