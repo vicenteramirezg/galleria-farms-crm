@@ -14,7 +14,7 @@ def get_contact_model():
 
 @shared_task(name="crm.tasks.send_birthday_reminders")
 def send_birthday_reminders():
-    """ Celery task to send birthday reminders to salespeople """
+    """ Celery task to send birthday reminders to salespeople & manager """
     Contact = get_contact_model()  # ✅ Load model dynamically
     today = now().date()
     contacts = Contact.objects.filter(birthday_month=today.month, birthday_day=today.day)
@@ -31,7 +31,12 @@ def send_birthday_reminders():
 
         # ✅ Send email to the Manager (Veronica)
         send_birthday_email(
-            type("Manager", (object,), {"user": type("User", (object,), {"email": MANAGER_EMAIL})}),
+            type("Manager", (object,), {
+                "user": type("User", (object,), {
+                    "first_name": MANAGER_NAME,  # ✅ Properly include Veronica's name
+                    "email": MANAGER_EMAIL       # ✅ Properly include Veronica's email
+                })
+            }),
             contact
         )
 
@@ -39,7 +44,7 @@ def send_birthday_reminders():
 
 @shared_task(name="crm.tasks.send_whatsapp_birthday_reminders")
 def send_whatsapp_birthday_reminders():
-    """ Celery task to send WhatsApp birthday reminders to salespeople """
+    """ Celery task to send WhatsApp birthday reminders to salespeople & manager """
     Contact = get_contact_model()  # ✅ Load model dynamically
     today = now().date()
     contacts = Contact.objects.filter(birthday_month=today.month, birthday_day=today.day)
@@ -56,7 +61,10 @@ def send_whatsapp_birthday_reminders():
 
         # ✅ Send message to the manager (always)
         send_whatsapp_birthday_message(
-            type(MANAGER_NAME, (object,), {"phone": MANAGER_PHONE, "user": type("User", (object,), {"first_name": "Manager"})}),
+            type("Manager", (object,), {
+                "phone": MANAGER_PHONE,
+                "user": type("User", (object,), {"first_name": MANAGER_NAME})  # ✅ Fixed Manager name
+            }),
             contact
         )
 
