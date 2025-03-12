@@ -468,16 +468,16 @@ def add_customer(request):
 
 @login_required
 def customer_list(request):
-    """Highly optimized customer list view with indexing, pagination, and efficient queries."""
+    """Optimized customer list view with indexing, pagination, and efficient queries."""
     user = request.user
     selected_department = request.GET.get("department", "").strip()
     selected_salesperson = request.GET.get("salesperson", "").strip()
     search_query = request.GET.get("search", "").strip()
 
-    # **🚀 Indexed Query: Start with All Customers**
-    customers_query = Customer.objects.only("id", "name", "department", "salesperson_id").order_by("department", "name")
+    # **🚀 Start with All Customers (Use Indexed Query)**
+    customers_query = Customer.objects.order_by("department", "name")
 
-    # **🚀 Apply Role-Based Filtering (Uses Indexed Fields)**
+    # **🚀 Apply Role-Based Filtering**
     if user.profile.role == Role.EXECUTIVE:
         customers = customers_query  # ✅ Executives see all customers
     elif user.profile.role == Role.SALESPERSON:
@@ -492,21 +492,20 @@ def customer_list(request):
         department = department_mapping.get(user.profile.role, None)
         customers = customers_query.filter(department=department) if department else Customer.objects.none()
 
-    # **🚀 Apply Filters (Uses Indexes)**
+    # **🚀 Apply Filters**
     if selected_department:
-        customers = customers.filter(department=selected_department)  # ✅ Uses `idx_customer_department`
+        customers = customers.filter(department=selected_department)
     if selected_salesperson:
-        customers = customers.filter(salesperson_id=selected_salesperson)  # ✅ Uses `idx_customer_salesperson`
+        customers = customers.filter(salesperson_id=selected_salesperson)
     if search_query:
-        customers = customers.filter(name__icontains=search_query)  # ✅ Uses `idx_customer_name`
+        customers = customers.filter(name__icontains=search_query)
 
-    # **🚀 Optimize Query Execution: Use `only()` to Load Necessary Fields**
-    customers = customers.only("id", "name", "department", "salesperson_id")
+    # **🚀 Use `.values()` to Fetch Required Fields Explicitly**
+    customers = customers.values(
+        "id", "name", "department", "salesperson__id", "salesperson__user__first_name", "salesperson__user__last_name"
+    )
 
-    # **🚀 Use `select_related()` for Salesperson Optimization**
-    customers = customers.select_related("salesperson__user")
-
-    # **🚀 Pagination (Avoids Loading Too Many Customers)**
+    # **🚀 Pagination**
     paginator = Paginator(customers, 50)  # ✅ Show 50 customers per page
     page_number = request.GET.get("page")
     customers_paginated = paginator.get_page(page_number)
@@ -514,10 +513,10 @@ def customer_list(request):
     # **🚀 Optimize Salespeople Query**
     available_salespeople = Salesperson.objects.filter(
         customers__isnull=False
-    ).distinct().only("id", "user__first_name", "user__last_name").order_by("user__first_name", "user__last_name")
+    ).distinct().values("id", "user__first_name", "user__last_name").order_by("user__first_name", "user__last_name")
 
     return render(request, "crm/customer_list.html", {
-        "customers_paginated": customers_paginated,  # ✅ Use paginated results
+        "customers_paginated": customers_paginated,  # ✅ Paginated results
         "department_choices": dict(Customer.DEPARTMENT_CHOICES),
         "available_salespeople": available_salespeople,
         "selected_department": selected_department,
@@ -536,11 +535,13 @@ def contact_list(request):
     search_query = request.GET.get("search", "").strip()
     page = request.GET.get("page", 1)
 
-    # **🚀 Role-based Filtering**
+    # **🚀 Role-based Filtering on Customers**
+    customers_query = Customer.objects.order_by("department", "name")
+
     if user.profile.role == Role.EXECUTIVE:
-        customers_query = Customer.objects.only("id", "name", "department", "salesperson_id")
+        customers = customers_query  # ✅ Executives see all customers
     elif user.profile.role == Role.SALESPERSON:
-        customers_query = Customer.objects.filter(salesperson=user.salesperson).only("id", "name", "department", "salesperson_id")
+        customers = customers_query.filter(salesperson=user.salesperson)  # ✅ Salespeople see their customers only
     else:
         department_mapping = {
             Role.MANAGER_MASS_MARKET: Customer.MASS_MARKET,
@@ -549,19 +550,20 @@ def contact_list(request):
             Role.MANAGER_WHOLESALE: Customer.WHOLESALE,
         }
         department = department_mapping.get(user.profile.role)
-        customers_query = Customer.objects.filter(department=department).only("id", "name", "department", "salesperson_id") if department else Customer.objects.none()
+        customers = customers_query.filter(department=department) if department else Customer.objects.none()
 
-    # **🚀 Apply Additional Filters**
+    # **🚀 Apply Additional Filters on Customers**
     if selected_department:
-        customers_query = customers_query.filter(department=selected_department)
+        customers = customers.filter(department=selected_department)
     if selected_salesperson:
-        customers_query = customers_query.filter(salesperson_id=selected_salesperson)
+        customers = customers.filter(salesperson_id=selected_salesperson)
 
-    # **🚀 Fetch Contacts Efficiently**
-    contacts_query = Contact.objects.filter(customer__in=customers_query).only(
-        "id", "name", "customer_id", "email", "phone", "birthday_day", "birthday_month", "relationship_score", "is_active"
+    # **🚀 Fetch Contacts Efficiently (Avoid N+1 Queries)**
+    contacts_query = Contact.objects.filter(customer__in=customers).select_related("customer").order_by(
+        "customer__department", "customer__name", "name"
     )
 
+    # **🚀 Apply Contact Filters**
     if selected_status == "active":
         contacts_query = contacts_query.filter(is_active=True)
     elif selected_status == "inactive":
@@ -570,7 +572,11 @@ def contact_list(request):
     if search_query:
         contacts_query = contacts_query.filter(name__icontains=search_query)
 
-    contacts_query = contacts_query.order_by("customer__department", "customer__name", "name")
+    # **🚀 Fetch Required Fields Only (Optimized Query)**
+    contacts_query = contacts_query.values(
+        "id", "name", "email", "phone", "birthday_day", "birthday_month", "relationship_score", "is_active",
+        "customer__id", "customer__name", "customer__department"
+    )
 
     # **🚀 Pagination (20 contacts per page)**
     paginator = Paginator(contacts_query, 20)
@@ -579,13 +585,17 @@ def contact_list(request):
     # **🚀 Organize contacts by department & customer**
     grouped_contacts = defaultdict(lambda: defaultdict(list))
     for contact in contacts_paginated:
-        birthday_month = int(contact.birthday_month) if contact.birthday_month else None
-        contact.clean_birthday = f"{MONTH_NAMES.get(birthday_month, 'Unknown')}, {contact.birthday_day}" if birthday_month and contact.birthday_day else "Not provided"
-        grouped_contacts[contact.customer.department][contact.customer].append(contact)
+        # ✅ Format birthday properly
+        birthday_month = int(contact["birthday_month"]) if contact["birthday_month"] else None
+        contact["clean_birthday"] = f"{MONTH_NAMES.get(birthday_month, 'Unknown')}, {contact['birthday_day']}" if birthday_month and contact["birthday_day"] else "Not provided"
+
+        grouped_contacts[contact["customer__department"]][contact["customer__id"], contact["customer__name"]].append(contact)
 
     # **🚀 Fetch Department & Salespeople Filters**
     department_choices = dict(Customer.DEPARTMENT_CHOICES)
-    available_salespeople = Salesperson.objects.filter(customers__isnull=False).only("id", "user__first_name", "user__last_name").distinct().order_by("user__first_name", "user__last_name")
+    available_salespeople = Salesperson.objects.filter(customers__isnull=False).values(
+        "id", "user__first_name", "user__last_name"
+    ).distinct().order_by("user__first_name", "user__last_name")
 
     return render(request, "crm/contact_list.html", {
         "grouped_contacts": grouped_contacts,
