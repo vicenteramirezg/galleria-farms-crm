@@ -6,7 +6,7 @@ from crm.utils.whatsapp_utils import send_whatsapp_birthday_message
 
 MANAGER_PHONE = "+13055190251"
 
-@shared_task(name="crm.tasks.send_birthday_reminders")  # Explicit name
+@shared_task(name="crm.tasks.send_birthday_reminders")
 def send_birthday_reminders():
     today = now().date()
     contacts = Contact.objects.filter(birthday_month=today.month, birthday_day=today.day)
@@ -18,7 +18,7 @@ def send_birthday_reminders():
             send_birthday_email(salesperson, contact)
     return f"Sent {contacts.count()} birthday reminder emails"
 
-@shared_task(name="crm.tasks.send_whatsapp_birthday_reminders")  # Explicit name
+@shared_task(name="crm.tasks.send_whatsapp_birthday_reminders")
 def send_whatsapp_birthday_reminders():
     today = now().date()
     contacts = Contact.objects.filter(birthday_month=today.month, birthday_day=today.day)
