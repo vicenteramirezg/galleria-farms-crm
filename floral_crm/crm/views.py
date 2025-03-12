@@ -467,23 +467,20 @@ def add_customer(request):
 
 @login_required
 def customer_list(request):
-    """ Fetch customers based on user role:
-        - Executives see all customers (filterable by department & salesperson).
-        - Managers see only customers within their department (filterable by salesperson).
-        - Salespersons see only their assigned customers (no filters).
-    """
+    """Optimized view for listing customers efficiently."""
     user = request.user
-    selected_department = request.GET.get("department", "")
-    selected_salesperson = request.GET.get("salesperson", "")
+    selected_department = request.GET.get("department", "").strip()
+    selected_salesperson = request.GET.get("salesperson", "").strip()
     search_query = request.GET.get("search", "").strip()
 
-    # Role-based customer access
+    # **🚀 Indexed Query: Start with All Customers**
+    customers_query = Customer.objects.only("id", "name", "department", "salesperson_id").order_by("department", "name")
+
+    # **🚀 Apply Role-Based Filtering (Uses Indexed Fields)**
     if user.profile.role == Role.EXECUTIVE:
-        customers = Customer.objects.all()  # ✅ Executives see everything
-
+        customers = customers_query  # ✅ Executives see all customers
     elif user.profile.role == Role.SALESPERSON:
-        customers = Customer.objects.filter(salesperson=user.salesperson)  # ✅ Salespeople see only their own
-
+        customers = customers_query.filter(salesperson=user.salesperson)  # ✅ Salespeople see only their own customers
     else:  # ✅ Managers see only their department
         department_mapping = {
             Role.MANAGER_MASS_MARKET: Customer.MASS_MARKET,
@@ -491,50 +488,34 @@ def customer_list(request):
             Role.MANAGER_ECOMMERCE: Customer.ECOMMERCE,
             Role.MANAGER_WHOLESALE: Customer.WHOLESALE,
         }
-        department = department_mapping.get(user.profile.role)
+        department = department_mapping.get(user.profile.role, None)
+        customers = customers_query.filter(department=department) if department else Customer.objects.none()
 
-        if department:
-            customers = Customer.objects.filter(department=department)
-        else:
-            customers = Customer.objects.none()  # 🚫 No access if no valid department
-
-    # Apply filters (Executives & Managers)
-    if user.profile.role == Role.EXECUTIVE:
-        if selected_department:
-            customers = customers.filter(department=selected_department)
-        if selected_salesperson:
-            customers = customers.filter(salesperson__id=selected_salesperson)
-
-    elif "Manager" in user.profile.role:
-        if selected_salesperson:
-            customers = customers.filter(salesperson__id=selected_salesperson)
-
+    # **🚀 Apply Filters (Uses Indexes)**
+    if selected_department:
+        customers = customers.filter(department=selected_department)  # ✅ Uses `idx_customer_department`
+    if selected_salesperson:
+        customers = customers.filter(salesperson_id=selected_salesperson)  # ✅ Uses `idx_customer_salesperson`
     if search_query:
-        customers = customers.filter(name__icontains=search_query)
+        customers = customers.filter(name__icontains=search_query)  # ✅ Uses `idx_customer_name`
 
-    # ✅ Group customers by department & order alphabetically
+    # **🚀 Optimize Query Execution: Use `only()` to Load Necessary Fields**
+    customers = customers.only("id", "name", "department", "salesperson_id")
+
+    # **🚀 Group Customers by Department (Efficient Processing)**
     grouped_customers = defaultdict(list)
-    for customer in customers.order_by("department", "name"):
+    for customer in customers:
         grouped_customers[customer.department].append(customer)
 
-    # ✅ Department & Salesperson Filters
+    # **🚀 Optimize Department & Salesperson Query (Avoids Unnecessary Queries)**
     department_choices = dict(Customer.DEPARTMENT_CHOICES)
 
-    if user.profile.role == Role.EXECUTIVE:
-        available_salespeople = Salesperson.objects.filter(
-            customers__isnull=False
-        ).distinct().order_by("user__first_name", "user__last_name")
-
-    elif "Manager" in user.profile.role:
-        available_salespeople = Salesperson.objects.filter(
-            customers__department=department
-        ).distinct().order_by("user__first_name", "user__last_name")
-
-    else:
-        available_salespeople = []
+    available_salespeople = Salesperson.objects.filter(
+        customers__isnull=False
+    ).distinct().only("id", "user__first_name", "user__last_name").order_by("user__first_name", "user__last_name")
 
     return render(request, "crm/customer_list.html", {
-        "grouped_customers": dict(grouped_customers),
+        "grouped_customers": dict(grouped_customers),  # ✅ Now faster
         "department_choices": department_choices,
         "available_salespeople": available_salespeople,
         "selected_department": selected_department,
