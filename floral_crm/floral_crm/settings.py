@@ -191,7 +191,7 @@ else:
     CELERY_BROKER_URL = 'redis://localhost:6379/0'
 
 CELERY_TASK_ALWAYS_EAGER = False
-CELERY_RESULT_BACKEND = "django-db"
+CELERY_RESULT_BACKEND = os.getenv("REDIS_URL")  # ✅ Use Redis as the backend too
 CELERY_RESULT_EXTENDED = True
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
