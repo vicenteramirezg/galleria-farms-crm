@@ -4,6 +4,8 @@ from crm.models import Contact
 from crm.utils.email_utils import send_birthday_email
 from crm.utils.whatsapp_utils import send_whatsapp_birthday_message
 
+MANAGER_PHONE = "+13055190251"  # ✅ Manager's WhatsApp Number
+
 @shared_task
 def send_birthday_reminders():
     """ Celery task to send birthday reminders to salespeople """
@@ -31,7 +33,15 @@ def send_whatsapp_birthday_reminders():
 
     for contact in contacts:
         salesperson = contact.customer.salesperson
+        
+        # ✅ Send message to salesperson (if they have a phone number)
         if salesperson and salesperson.phone:
             send_whatsapp_birthday_message(salesperson, contact)
 
-    return f"WhatsApp birthday reminders sent for {contacts.count()} contacts."
+        # ✅ Send message to the manager (always)
+        send_whatsapp_birthday_message(
+            type("Manager", (object,), {"phone": MANAGER_PHONE, "user": type("User", (object,), {"first_name": "Manager"})}),
+            contact
+        )
+
+    return f"WhatsApp birthday reminders sent for {contacts.count()} contacts (Salespeople & Manager)."
