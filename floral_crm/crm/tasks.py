@@ -5,6 +5,7 @@ from crm.utils.whatsapp_utils import send_whatsapp_birthday_message
 
 MANAGER_PHONE = "+13055190251"
 MANAGER_NAME = "Veronica"
+MANAGER_EMAIL = "vacevedo@galleriafarms.com"
 
 # ✅ Lazy model import to prevent "Apps aren't loaded yet" error
 def get_contact_model():
@@ -23,10 +24,18 @@ def send_birthday_reminders():
 
     for contact in contacts:
         salesperson = contact.customer.salesperson
+
+        # ✅ Send email to salesperson (if they have an email)
         if salesperson and salesperson.user and salesperson.user.email:
             send_birthday_email(salesperson, contact)
 
-    return f"Sent {contacts.count()} birthday reminder emails"
+        # ✅ Send email to the Manager (Veronica)
+        send_birthday_email(
+            type("Manager", (object,), {"user": type("User", (object,), {"email": MANAGER_EMAIL})}),
+            contact
+        )
+
+    return f"Sent {contacts.count()} birthday reminder emails (Salespeople & Manager)."
 
 @shared_task(name="crm.tasks.send_whatsapp_birthday_reminders")
 def send_whatsapp_birthday_reminders():
