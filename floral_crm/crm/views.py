@@ -127,7 +127,7 @@ def dashboard(request):
     avg_relationship_score = Contact.objects.filter(customer__in=customers, is_active=True) \
         .aggregate(avg_score=Avg("relationship_score"))["avg_score"] or 0
 
-    # **🚀 Limit Displayed Customers to Top 10 (Uses Indexed Query)**
+    # **🚀 Limit Displayed Customers to Top 10 (Now Includes `estimated_yearly_sales`)**
     top_customers = customers[:10]
     customer_data = top_customers.annotate(
         num_contacts=Count("contacts", filter=Q(contacts__is_active=True)),
