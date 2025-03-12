@@ -21,7 +21,7 @@ def send_birthday_reminders():
     return f"Sent {contacts.count()} birthday reminder emails"
 
 @shared_task
-def send_whatsapp_birthday_reminders_task():
+def send_whatsapp_birthday_reminders():
     """ Celery task to send WhatsApp birthday reminders to salespeople. """
     today = now().date()
     contacts = Contact.objects.filter(birthday_month=today.month, birthday_day=today.day)
