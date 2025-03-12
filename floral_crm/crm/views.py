@@ -86,11 +86,7 @@ MONTH_NAMES = {
 
 @login_required
 def dashboard(request):
-    """ Generates summary metrics based on the user's role:
-        - Executives see all customers & contacts.
-        - Managers see only customers & contacts within their department.
-        - Salespeople see only their assigned customers & contacts.
-    """
+    """Generates summary metrics based on the user's role."""
     User = get_user_model()
     user = request.user
     salesperson = getattr(user, 'salesperson', None)
@@ -99,114 +95,81 @@ def dashboard(request):
     selected_department = request.GET.get("department", "")
     selected_salesperson = request.GET.get("salesperson", "")
 
-    # Convert selected_salesperson to an integer safely
-    try:
-        selected_salesperson = int(selected_salesperson) if selected_salesperson else None
-    except ValueError:
-        selected_salesperson = None
+    # Convert selected_salesperson safely
+    selected_salesperson = int(selected_salesperson) if selected_salesperson.isdigit() else None
 
-    # Role-based filtering logic
+    # **Role-based Filtering**
     if user.profile.role == Role.EXECUTIVE:
-        customers = Customer.objects.prefetch_related("contacts")  # ✅ Executives see everything
-
-        # Executives can filter freely
-        if selected_department:
-            customers = customers.filter(department=selected_department)
-        if selected_salesperson:
-            # Map User ID to Salesperson ID
-            salesperson_id = User.objects.filter(id=selected_salesperson).values_list('salesperson__id', flat=True).first()
-            if salesperson_id:
-                customers = customers.filter(salesperson_id=salesperson_id)
-
+        customers = Customer.objects.all()
     elif "Manager" in user.profile.role:
-        # ✅ Ensure department restriction is applied only once
         department_name = user.profile.role.replace("Manager - ", "").lower()
-        customers = Customer.objects.filter(department=department_name).prefetch_related("contacts")
+        customers = Customer.objects.filter(department=department_name)
+    else:
+        customers = Customer.objects.filter(salesperson=salesperson)
 
-        if selected_salesperson:
-            # Map User ID to Salesperson ID
-            salesperson_id = User.objects.filter(id=selected_salesperson).values_list('salesperson__id', flat=True).first()
-            if salesperson_id:
-                customers = customers.filter(salesperson_id=salesperson_id)  # ✅ Only filter salesperson inside department scope
+    # **Apply Filters**
+    if selected_department:
+        customers = customers.filter(department=selected_department)
+    if selected_salesperson:
+        salesperson_id = User.objects.filter(id=selected_salesperson).values_list("salesperson__id", flat=True).first()
+        if salesperson_id:
+            customers = customers.filter(salesperson_id=salesperson_id)
 
-    else:  
-        # ✅ Salespeople should ONLY see their own customers
-        customers = Customer.objects.filter(salesperson=salesperson).prefetch_related("contacts")
+    # **Limit Customers to 10 (Highest Estimated Sales)**
+    customers = customers.order_by("-estimated_yearly_sales")[:10]
 
-    # Calculate key statistics
+    # **Optimized Aggregations**
     total_sales = customers.aggregate(Sum("estimated_yearly_sales"))["estimated_yearly_sales__sum"] or 0
     total_contacts = Contact.objects.filter(customer__in=customers, is_active=True).count()
     avg_relationship_score = Contact.objects.filter(customer__in=customers, is_active=True) \
-                                        .aggregate(Avg("relationship_score"))["relationship_score__avg"] or 0
+        .aggregate(Avg("relationship_score"))["relationship_score__avg"] or 0
 
-    # Prepare data for top customers
-    top_customers = customers.order_by("-estimated_yearly_sales")[:5]  # Top 5 by sales
+    # **Optimize Customer Data Fetching**
+    customer_data = customers.annotate(
+        num_contacts=Count("contacts", filter=Q(contacts__is_active=True)),
+        avg_score=Avg("contacts__relationship_score", filter=Q(contacts__is_active=True))
+    ).values(
+        "id", "name", "estimated_yearly_sales", "num_contacts", "avg_score"
+    )
 
-    # Enrich customer data with aggregated contact stats
-    customer_data = []
-    for customer in customers:
-        num_contacts = customer.contacts.filter(is_active=True).count()
-        avg_score = customer.contacts.filter(is_active=True).aggregate(Avg("relationship_score"))["relationship_score__avg"] or 0
-        customer_data.append({
-            "id": customer.id,
-            "name": customer.name,
-            "sales": customer.estimated_yearly_sales,
-            "num_contacts": num_contacts,
-            "avg_score": round(avg_score, 2) if avg_score else "N/A"
-        })
-
-    # ✅ Fix upcoming birthdays filtering logic
+    # **Upcoming Birthdays Optimization**
     today = date.today()
-    today_month, today_day = today.month, today.day
     future_date = today + timedelta(days=30)
-    future_month, future_day = future_date.month, future_date.day
 
     upcoming_birthdays = Contact.objects.filter(
         customer__in=customers,
-        is_active=True  # ✅ Only active contacts
+        is_active=True,
     ).filter(
-        Q(birthday_month=today_month, birthday_day__gte=today_day) |  
-        Q(birthday_month=future_month, birthday_day__lte=future_day) |  
-        Q(birthday_month__gt=today_month, birthday_month__lt=future_month)
-    ).order_by("birthday_month", "birthday_day")
+        Q(
+            birthday_month=today.month, birthday_day__gte=today.day
+        ) | Q(
+            birthday_month=future_date.month, birthday_day__lte=future_date.day
+        ) | Q(
+            birthday_month__gt=today.month, birthday_month__lt=future_date.month
+        )
+    ).order_by("birthday_month", "birthday_day").only("name", "birthday_month", "birthday_day")
 
-    # ✅ Ensure clean birthday formatting
+    # Format birthdays efficiently
     for contact in upcoming_birthdays:
-        try:
-            month_int = int(contact.birthday_month)  
-            month_name = MONTH_NAMES.get(month_int)  
-        except (ValueError, TypeError):
-            month_name = None  
+        month_name = MONTH_NAMES.get(contact.birthday_month, "Unknown")
+        contact.clean_birthday = f"{month_name}, {contact.birthday_day}"
 
-        if month_name:  
-            contact.clean_birthday = f"{month_name}, {contact.birthday_day}"
-        else:
-            contact.clean_birthday = "Not provided"  
-
-    # ✅ Fetch all departments for filtering
+    # **Get Departments and Available Salespeople Efficiently**
     department_choices = dict(Customer.DEPARTMENT_CHOICES)
 
-    # ✅ Fetch available salespeople (Only those assigned to customers in the manager's department)
     if user.profile.role == Role.EXECUTIVE:
-        available_salespeople = User.objects.filter(
-            salesperson__customers__isnull=False
-        ).distinct().order_by("first_name", "last_name")
-
+        available_salespeople = User.objects.filter(salesperson__customers__isnull=False).distinct()
     elif "Manager" in user.profile.role:
-        department_name = user.profile.role.replace("Manager - ", "").lower()
-        available_salespeople = User.objects.filter(
-            salesperson__customers__department=department_name  
-        ).distinct().order_by("first_name", "last_name")
-
+        available_salespeople = User.objects.filter(salesperson__customers__department=department_name).distinct()
     else:
-        available_salespeople = User.objects.filter(id=user.id)  
+        available_salespeople = User.objects.filter(id=user.id)
 
     return render(request, "crm/dashboard.html", {
         "customers": customer_data,
         "total_sales": f"{total_sales:,.0f}",
         "total_contacts": total_contacts,
         "avg_relationship_score": round(avg_relationship_score, 2) if avg_relationship_score else "N/A",
-        "top_customers": top_customers,
+        "top_customers": customers,  # Already limited to top 10
         "upcoming_birthdays": upcoming_birthdays,
         "department_choices": department_choices,
         "available_salespeople": available_salespeople,
