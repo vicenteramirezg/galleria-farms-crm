@@ -4,6 +4,7 @@ from crm.utils.email_utils import send_birthday_email
 from crm.utils.whatsapp_utils import send_whatsapp_birthday_message
 
 MANAGER_PHONE = "+13055190251"
+MANAGER_NAME = "Veronica"
 
 # ✅ Lazy model import to prevent "Apps aren't loaded yet" error
 def get_contact_model():
@@ -46,7 +47,7 @@ def send_whatsapp_birthday_reminders():
 
         # ✅ Send message to the manager (always)
         send_whatsapp_birthday_message(
-            type("Manager", (object,), {"phone": MANAGER_PHONE, "user": type("User", (object,), {"first_name": "Manager"})}),
+            type(MANAGER_NAME, (object,), {"phone": MANAGER_PHONE, "user": type("User", (object,), {"first_name": "Manager"})}),
             contact
         )
 
