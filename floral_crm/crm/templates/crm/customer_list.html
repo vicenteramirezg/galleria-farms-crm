@@ -65,28 +65,33 @@
                 </tr>
             </thead>
             <tbody>
-                {% for department, customer in customers_paginated %}
-                <tr>
-                    {% if department %}
-                        <!-- ✅ Show Department Name Only for the First Customer in Each Department -->
-                        <td class="align-top fw-bold" rowspan="{{ customers_paginated|length }}">
-                            {{ department }}
-                        </td>
+                {% for customer in customers_paginated %}
+                    {% if forloop.first or customer.department != previous_department %}
+                        <!-- ✅ Print Department Row -->
+                        <tr class="table-secondary">
+                            <td colspan="6" class="fw-bold">{{ customer.get_department_display }}</td>
+                        </tr>
                     {% endif %}
-                    <td>
-                        <a href="{% url 'crm:customer_detail' customer.id %}" class="text-decoration-none fw-bold">
-                            {{ customer.name }}
-                        </a>
-                    </td>
-                    <td>{{ customer.salesperson.user.get_full_name }}</td>
-                    <td>${{ customer.estimated_yearly_sales|intcomma }}</td>
-                    <td>{{ customer.avg_relationship_score|floatformat:2 }}</td>
-                    <td>
-                        <a href="{% url 'crm:customer_edit' customer.id %}" class="btn btn-sm btn-outline-primary">
-                            <i class="fas fa-edit"></i> Edit
-                        </a>
-                    </td>
-                </tr>
+                    
+                    <tr>
+                        <td></td> <!-- Empty cell for department column -->
+                        <td>
+                            <a href="{% url 'crm:customer_detail' customer.id %}" class="text-decoration-none fw-bold">
+                                {{ customer.name }}
+                            </a>
+                        </td>
+                        <td>{{ customer.salesperson.user.get_full_name }}</td>
+                        <td>${{ customer.estimated_yearly_sales|intcomma }}</td>
+                        <td>{{ customer.avg_relationship_score|floatformat:2 }}</td>
+                        <td>
+                            <a href="{% url 'crm:customer_edit' customer.id %}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-edit"></i> Edit
+                            </a>
+                        </td>
+                    </tr>
+
+                    {% with previous_department=customer.department %}
+                    {% endwith %}
                 {% endfor %}
             </tbody>
         </table>
