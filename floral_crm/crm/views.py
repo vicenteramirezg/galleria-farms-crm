@@ -468,7 +468,7 @@ def add_customer(request):
 
 @login_required
 def customer_list(request):
-    """Optimized customer list view with indexing, pagination, and efficient queries."""
+    """🚀 Optimized customer list view with indexing, pagination, and efficient queries."""
     user = request.user
     selected_department = request.GET.get("department", "").strip()
     selected_salesperson = request.GET.get("salesperson", "").strip()
@@ -500,10 +500,10 @@ def customer_list(request):
     if search_query:
         customers = customers.filter(name__icontains=search_query)
 
-    # **🚀 Use `.values()` to Fetch Required Fields Explicitly**
-    customers = customers.values(
-        "id", "name", "department", "salesperson__id", "salesperson__user__first_name", "salesperson__user__last_name"
-    )
+    # **🚀 Optimize Query Execution with `.only()` & `.select_related()`**
+    customers = customers.select_related("salesperson__user").annotate(
+        avg_relationship_score=Avg("contacts__relationship_score")
+    ).only("id", "name", "department", "estimated_yearly_sales", "salesperson")
 
     # **🚀 Pagination**
     paginator = Paginator(customers, 50)  # ✅ Show 50 customers per page
@@ -513,7 +513,7 @@ def customer_list(request):
     # **🚀 Optimize Salespeople Query**
     available_salespeople = Salesperson.objects.filter(
         customers__isnull=False
-    ).distinct().values("id", "user__first_name", "user__last_name").order_by("user__first_name", "user__last_name")
+    ).distinct().only("id", "user__first_name", "user__last_name").order_by("user__first_name", "user__last_name")
 
     return render(request, "crm/customer_list.html", {
         "customers_paginated": customers_paginated,  # ✅ Paginated results
@@ -527,7 +527,7 @@ def customer_list(request):
 @login_required
 def contact_list(request):
     """🚀 Optimized Contact List with Pagination & Indexed Queries"""
-
+    
     user = request.user
     selected_department = request.GET.get("department", "").strip()
     selected_salesperson = request.GET.get("salesperson", "").strip()
@@ -535,7 +535,7 @@ def contact_list(request):
     search_query = request.GET.get("search", "").strip()
     page = request.GET.get("page", 1)
 
-    # **🚀 Role-based Filtering on Customers**
+    # **🚀 Fetch Customers (Used for Filtering Contacts)**
     customers_query = Customer.objects.order_by("department", "name")
 
     if user.profile.role == Role.EXECUTIVE:
@@ -552,15 +552,19 @@ def contact_list(request):
         department = department_mapping.get(user.profile.role)
         customers = customers_query.filter(department=department) if department else Customer.objects.none()
 
-    # **🚀 Apply Additional Filters on Customers**
+    # **🚀 Apply Additional Customer Filters**
     if selected_department:
         customers = customers.filter(department=selected_department)
     if selected_salesperson:
         customers = customers.filter(salesperson_id=selected_salesperson)
 
-    # **🚀 Fetch Contacts Efficiently (Avoid N+1 Queries)**
-    contacts_query = Contact.objects.filter(customer__in=customers).select_related("customer").order_by(
-        "customer__department", "customer__name", "name"
+    # **🚀 Fetch Contacts Efficiently**
+    contacts_query = (
+        Contact.objects
+        .filter(customer__in=customers)
+        .select_related("customer")  # Optimized join
+        .only("id", "name", "email", "phone", "birthday_day", "birthday_month", "relationship_score", "is_active", "customer__id", "customer__name", "customer__department")
+        .order_by("customer__department", "customer__name", "name")  # Proper ordering
     )
 
     # **🚀 Apply Contact Filters**
@@ -572,24 +576,15 @@ def contact_list(request):
     if search_query:
         contacts_query = contacts_query.filter(name__icontains=search_query)
 
-    # **🚀 Fetch Required Fields Only (Optimized Query)**
-    contacts_query = contacts_query.values(
-        "id", "name", "email", "phone", "birthday_day", "birthday_month", "relationship_score", "is_active",
-        "customer__id", "customer__name", "customer__department"
-    )
-
     # **🚀 Pagination (20 contacts per page)**
     paginator = Paginator(contacts_query, 20)
     contacts_paginated = paginator.get_page(page)
 
-    # **🚀 Organize contacts by department & customer**
+    # **🚀 Organize Contacts by Department & Customer**
     grouped_contacts = defaultdict(lambda: defaultdict(list))
     for contact in contacts_paginated:
-        # ✅ Format birthday properly
-        birthday_month = int(contact["birthday_month"]) if contact["birthday_month"] else None
-        contact["clean_birthday"] = f"{MONTH_NAMES.get(birthday_month, 'Unknown')}, {contact['birthday_day']}" if birthday_month and contact["birthday_day"] else "Not provided"
-
-        grouped_contacts[contact["customer__department"]][contact["customer__id"], contact["customer__name"]].append(contact)
+        department_name = contact.customer.get_department_display()
+        grouped_contacts[department_name][contact.customer].append(contact)  # ✅ Proper grouping
 
     # **🚀 Fetch Department & Salespeople Filters**
     department_choices = dict(Customer.DEPARTMENT_CHOICES)
@@ -607,39 +602,6 @@ def contact_list(request):
         "selected_status": selected_status,
         "search_query": search_query,
     })
-
-class ContactListView(LoginRequiredMixin, ListView):
-    model = Contact
-    template_name = "crm/contact_list.html"  # Your template for displaying contacts
-    context_object_name = "contacts"  # Name used for the context in the template
-
-    def get_queryset(self):
-        """ Fetch contacts based on user role:
-            - Executives see all contacts.
-            - Salespersons see only contacts from their assigned customers.
-            - Managers see only contacts from customers in their department.
-        """
-        user = self.request.user
-
-        if user.profile.role == Role.EXECUTIVE:
-            return Contact.objects.all().order_by("name")  # ✅ Executives see all contacts
-
-        if user.profile.role == Role.SALESPERSON:
-            return Contact.objects.filter(customer__salesperson=user.salesperson).order_by("name")  # ✅ Salespersons filter
-
-        # ✅ Managers see only contacts within their department
-        department_mapping = {
-            Role.MANAGER_MASS_MARKET: Customer.MASS_MARKET,
-            Role.MANAGER_MM2: Customer.MM2,
-            Role.MANAGER_ECOMMERCE: Customer.ECOMMERCE,
-            Role.MANAGER_WHOLESALE: Customer.WHOLESALE,
-        }
-        department = department_mapping.get(user.profile.role)
-
-        if department:
-            return Contact.objects.filter(customer__department=department).order_by("name")  # ✅ Managers see their department's contacts
-
-        return Contact.objects.none()  # 🚫 No access if no valid department
 
 @login_required
 def add_contact(request):

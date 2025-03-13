@@ -1,6 +1,6 @@
 from django.urls import path
 from . import views
-from .views import dashboard, CustomerUpdateView, ContactUpdateView, add_customer, ContactListView, CustomerDetailView  # Make sure add_customer is imported
+from .views import dashboard, CustomerUpdateView, ContactUpdateView, add_customer, CustomerDetailView  # Make sure add_customer is imported
 
 app_name = 'crm'  # Add this line to set a namespace for your app
 
