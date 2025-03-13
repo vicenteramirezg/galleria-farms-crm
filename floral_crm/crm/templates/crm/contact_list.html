@@ -86,7 +86,7 @@
                     <tr>
                         {% if forloop.first %}
                             <!-- ✅ Merge Customer Name Cell for All Contacts -->
-                            <td rowspan="{{ customer_contacts|length }}" class="align-middle fw-bold">
+                            <td rowspan="{{ customer_contacts|length }}" class="align-top fw-bold">
                                 <a href="{% url 'crm:customer_detail' customer.id %}" class="text-decoration-none fw-bold">
                                     {{ customer.name }}
                                 </a>

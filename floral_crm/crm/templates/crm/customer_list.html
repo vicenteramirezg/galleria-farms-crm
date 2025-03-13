@@ -74,28 +74,30 @@
             </thead>
             <tbody>
                 {% for customer in customers_paginated %}
-                <tr>
-                    {% if forloop.first %}
-                        <td rowspan="{{ customers|length }}" class="align-middle fw-bold">
-                            {{ department }}
-                        </td>
+                    {% if forloop.first or customer.department != customers_paginated.previous_object.department %}
+                        <tr>
+                            <td class="align-top fw-bold" rowspan="{{ customers_paginated|length }}">
+                                {{ customer.get_department_display }}
+                            </td>
+                        </tr>
                     {% endif %}
-                    <td>
-                        <a href="{% url 'crm:customer_detail' customer.id %}" class="text-decoration-none fw-bold">
-                            {{ customer.name }}
-                        </a>
-                    </td>
-                    <td>{{ customer.salesperson.user.get_full_name }}</td>
-                    <td>${{ customer.estimated_yearly_sales|intcomma }}</td>
-                    <td>{{ customer.avg_relationship_score|floatformat:2 }}</td>
-                    <td>
-                        <a href="{% url 'crm:customer_edit' customer.id %}" class="btn btn-sm btn-outline-primary">
-                            <i class="fas fa-edit"></i> Edit
-                        </a>
-                    </td>
-                </tr>
+                    <tr>
+                        <td>
+                            <a href="{% url 'crm:customer_detail' customer.id %}" class="text-decoration-none fw-bold">
+                                {{ customer.name }}
+                            </a>
+                        </td>
+                        <td>{{ customer.salesperson.user.get_full_name }}</td>
+                        <td>${{ customer.estimated_yearly_sales|intcomma }}</td>
+                        <td>{{ customer.avg_relationship_score|floatformat:2 }}</td>
+                        <td>
+                            <a href="{% url 'crm:customer_edit' customer.id %}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-edit"></i> Edit
+                            </a>
+                        </td>
+                    </tr>
                 {% endfor %}
-            </tbody>
+            </tbody>            
         </table>
     </div>
 
