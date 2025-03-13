@@ -27,7 +27,7 @@ def send_whatsapp_birthday_message(salesperson, contact):
     message = client.messages.create(
         from_=settings.TWILIO_WHATSAPP_NUMBER,
         to=f"whatsapp:{salesperson.phone}",
-        content_sid="HXfaab57dc9c6885a088e809fddda5f790",  # Replace with your actual Template SID
+        content_sid="HXf36593d271b10ea2a531772acf050256",  # Replace with your actual Template SID
         content_variables=content_variables_json  # ✅ Ensure correct JSON format
     )
     
