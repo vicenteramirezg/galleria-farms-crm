@@ -468,13 +468,13 @@ def add_customer(request):
 
 @login_required
 def customer_list(request):
-    """🚀 Optimized customer list view with indexing, pagination, and efficient queries."""
+    """🚀 Optimized customer list view as a pivot table with indexing, pagination, and efficient queries."""
     user = request.user
     selected_department = request.GET.get("department", "").strip()
     selected_salesperson = request.GET.get("salesperson", "").strip()
     search_query = request.GET.get("search", "").strip()
 
-    # **🚀 Start with All Customers (Use Indexed Query)**
+    # **🚀 Start with All Customers (Ordered by Department & Name)**
     customers_query = Customer.objects.order_by("department", "name")
 
     # **🚀 Apply Role-Based Filtering**
@@ -505,10 +505,15 @@ def customer_list(request):
         avg_relationship_score=Avg("contacts__relationship_score")
     ).only("id", "name", "department", "estimated_yearly_sales", "salesperson")
 
+    # **🚀 Organize Customers by Department**
+    grouped_customers = defaultdict(list)
+    for customer in customers:
+        grouped_customers[customer.get_department_display()].append(customer)  # ✅ Use human-readable department
+
     # **🚀 Pagination**
-    paginator = Paginator(customers, 50)  # ✅ Show 50 customers per page
+    paginator = Paginator(list(grouped_customers.items()), 5)  # ✅ Show 5 departments per page
     page_number = request.GET.get("page")
-    customers_paginated = paginator.get_page(page_number)
+    grouped_customers_paginated = paginator.get_page(page_number)
 
     # **🚀 Optimize Salespeople Query**
     available_salespeople = Salesperson.objects.filter(
@@ -516,7 +521,7 @@ def customer_list(request):
     ).distinct().only("id", "user__first_name", "user__last_name").order_by("user__first_name", "user__last_name")
 
     return render(request, "crm/customer_list.html", {
-        "customers_paginated": customers_paginated,  # ✅ Paginated results
+        "grouped_customers_paginated": grouped_customers_paginated,  # ✅ Paginated results
         "department_choices": dict(Customer.DEPARTMENT_CHOICES),
         "available_salespeople": available_salespeople,
         "selected_department": selected_department,
@@ -536,7 +541,7 @@ def contact_list(request):
     page = request.GET.get("page", 1)
 
     # **🚀 Fetch Customers (Used for Filtering Contacts)**
-    customers_query = Customer.objects.order_by("department", "name")
+    customers_query = Customer.objects.order_by("name")
 
     if user.profile.role == Role.EXECUTIVE:
         customers = customers_query  # ✅ Executives see all customers
@@ -563,8 +568,8 @@ def contact_list(request):
         Contact.objects
         .filter(customer__in=customers)
         .select_related("customer")  # Optimized join
-        .only("id", "name", "email", "phone", "birthday_day", "birthday_month", "relationship_score", "is_active", "customer__id", "customer__name", "customer__department")
-        .order_by("customer__department", "customer__name", "name")  # Proper ordering
+        .only("id", "name", "email", "phone", "birthday_day", "birthday_month", "relationship_score", "is_active", "customer__id", "customer__name")
+        .order_by("customer__name", "name")  # Proper ordering
     )
 
     # **🚀 Apply Contact Filters**
@@ -580,17 +585,19 @@ def contact_list(request):
     paginator = Paginator(contacts_query, 20)
     contacts_paginated = paginator.get_page(page)
 
-    # **🚀 Organize Contacts by Department & Customer**
-    grouped_contacts = defaultdict(lambda: defaultdict(list))
+    # **🚀 Organize Contacts by Customer**
+    grouped_contacts = {}
     for contact in contacts_paginated:
-        department_name = contact.customer.get_department_display()
-        grouped_contacts[department_name][contact.customer].append(contact)  # ✅ Proper grouping
+        customer = contact.customer
+        if customer not in grouped_contacts:
+            grouped_contacts[customer] = []
+        grouped_contacts[customer].append(contact)
 
     # **🚀 Fetch Department & Salespeople Filters**
     department_choices = dict(Customer.DEPARTMENT_CHOICES)
-    available_salespeople = Salesperson.objects.filter(customers__isnull=False).values(
-        "id", "user__first_name", "user__last_name"
-    ).distinct().order_by("user__first_name", "user__last_name")
+    available_salespeople = Salesperson.objects.filter(
+        customers__isnull=False  # Ensures salesperson has customers
+    ).select_related("user").distinct().order_by("user__first_name", "user__last_name")
 
     return render(request, "crm/contact_list.html", {
         "grouped_contacts": grouped_contacts,

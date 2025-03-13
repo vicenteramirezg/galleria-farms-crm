@@ -29,11 +29,11 @@
                 <select name="salesperson" id="salespersonFilter" class="form-select" onchange="this.form.submit()">
                     <option value="">All Salespeople</option>
                     {% for salesperson in available_salespeople %}
-                        <option value="{{ salesperson.id }}" {% if selected_salesperson|slugify == salesperson.id|slugify %}selected{% endif %}>
+                        <option value="{{ salesperson.pk }}" {% if selected_salesperson|slugify == salesperson.pk|slugify %}selected{% endif %}>
                             {{ salesperson.user.get_full_name }}
                         </option>
                     {% endfor %}
-                </select>
+                </select>                
             </div>
             {% endif %}
 
@@ -66,52 +66,90 @@
     </div>
 
     <!-- 🚀 Contacts Table -->
-    {% if grouped_contacts %}
-        {% for department, customers in grouped_contacts.items %}
-        <h2 class="mt-4 text-primary">{{ department }}</h2>
-        {% for customer, contacts in customers.items %}
-            <h4 class="text-dark">{{ customer.name }}</h4>
-            <div class="table-responsive">
-                <table class="table table-striped shadow-sm">
-                    <thead class="thead-dark">
-                        <tr>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Phone</th>
-                            <th>Birthday</th>
-                            <th>Relationship Score</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for contact in contacts %}
-                        <tr>
-                            <td>{{ contact.name }}</td>
-                            <td>{{ contact.email }}</td>
-                            <td>{{ contact.phone }}</td>
-                            <td>{{ contact.clean_birthday }}</td>
-                            <td>{{ contact.relationship_score }}</td>
-                            <td>
-                                {% if contact.is_active %}
-                                    <span class="badge bg-success">Active</span>
-                                {% else %}
-                                    <span class="badge bg-danger">Inactive</span>
-                                {% endif %}
+    <div class="table-responsive mt-4">
+        <table class="table table-striped shadow-sm">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Customer</th>
+                    <th>Contact Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Birthday</th>
+                    <th>Relationship Score</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for customer, customer_contacts in grouped_contacts.items %}
+                    {% for contact in customer_contacts %}
+                    <tr>
+                        {% if forloop.first %}
+                            <!-- ✅ Merge Customer Name Cell for All Contacts -->
+                            <td rowspan="{{ customer_contacts|length }}" class="align-middle fw-bold">
+                                <a href="{% url 'crm:customer_detail' customer.id %}" class="text-decoration-none fw-bold">
+                                    {{ customer.name }}
+                                </a>
                             </td>
-                            <td>
-                                <a href="{% url 'crm:contact_edit' contact.id %}" class="btn btn-sm btn-outline-primary">Edit</a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        {% endfor %}
-    {% endfor %}
-    {% else %}
-        <p class="text-center mt-4">No contacts found.</p>
-    {% endif %}
+                        {% endif %}
+            
+                        <!-- ✅ Contact-Specific Columns -->
+                        <td>{{ contact.name }}</td>
+            
+                        <!-- ✅ Clickable Email -->
+                        <td>
+                            <a href="mailto:{{ contact.email }}" class="text-decoration-none">
+                                {{ contact.email }}
+                            </a>
+                        </td>
+            
+                        <!-- ✅ Clickable Phone -->
+                        <td>
+                            <a href="tel:{{ contact.phone }}" class="text-decoration-none">
+                                {{ contact.phone }}
+                            </a>
+                        </td>
+            
+                        <td>{{ contact.clean_birthday }}</td>
+            
+                        <!-- ⭐ Relationship Score as Stars -->
+                        <td>
+                            <div class="star-rating">
+                                {% for i in "12345"|make_list %}
+                                    {% if contact.relationship_score >= i|add:"0" %}
+                                        <span class="star checked">&#9733;</span>  <!-- Filled star -->
+                                    {% else %}
+                                        <span class="star">&#9733;</span>  <!-- Empty star -->
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </td>
+            
+                        <td>
+                            {% if contact.is_active %}
+                                <span class="badge bg-success">Active</span>
+                            {% else %}
+                                <span class="badge bg-danger">Inactive</span>
+                            {% endif %}
+                        </td>
+            
+                        <!-- ✅ WhatsApp Button -->
+                        <td>
+                            <a href="https://wa.me/{{ contact.phone }}?text=Hello,%20{{ contact.name }}!"  
+                               class="btn btn-success btn-sm" target="_blank">
+                                <i class="fab fa-whatsapp"></i>
+                            </a>
+                        </td>
+            
+                        <td>
+                            <a href="{% url 'crm:contact_edit' contact.id %}" class="btn btn-sm btn-outline-primary">Edit</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% endfor %}
+            </tbody>                                 
+        </table>
+    </div>
 
     <!-- 🚀 Pagination Controls -->
     {% if contacts_paginated.paginator.num_pages > 1 %}
@@ -146,4 +184,22 @@
         </a>
     </div>
 </div>
+
+<style>
+    .star-rating {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 3px;
+        font-size: 1.2rem;
+    }
+
+    .star {
+        color: #ccc;
+    }
+
+    .star.checked {
+        color: #ffcc00; /* Yellow stars */
+    }
+</style>
 {% endblock %}
