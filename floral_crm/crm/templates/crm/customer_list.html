@@ -143,9 +143,10 @@
     </script>
     {% endif %}
 
-    <!-- 🚀 Export Contacts Button -->
+    <!-- 🚀 Export Customers Button (Now Includes Active Filters) -->
     <div class="text-center mt-4">
-        <a href="{% url 'crm:export_customers' %}" class="btn btn-success btn-lg">
+        <a href="{% url 'crm:export_customers' %}?department={{ selected_department }}&salesperson={{ selected_salesperson }}&search={{ search_query }}" 
+        class="btn btn-success btn-lg">
             <i class="fas fa-file-export"></i> Export Customers as CSV
         </a>
     </div>

@@ -349,56 +349,129 @@ class ContactUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
 
 @login_required
 def export_contacts(request):
-    """ Exports contacts into a CSV file with additional fields: Birthday (Month & Day) & Salesperson """
+    """🚀 Export filtered contacts based on user role and active filters."""
+    
+    user = request.user
+    selected_department = request.GET.get("department", "").strip()
+    selected_salesperson = request.GET.get("salesperson", "").strip()
+    selected_status = request.GET.get("status", "").strip()
+    search_query = request.GET.get("search", "").strip()
 
-    # Get contacts associated with the logged-in salesperson
-    contacts = Contact.objects.filter(customer__salesperson=request.user.salesperson)
+    # 🚀 Fetch customers based on user role
+    customers_query = Customer.objects.order_by("name")
 
-    # Create the CSV response
+    if user.profile.role == Role.EXECUTIVE:
+        customers = customers_query  # ✅ Executives can export all contacts
+
+    elif user.profile.role == Role.SALESPERSON:
+        customers = customers_query.filter(salesperson=user.salesperson)  # ✅ Salespeople only export their own customers' contacts
+
+    else:  # ✅ Managers can export contacts from their department
+        department_mapping = {
+            Role.MANAGER_MASS_MARKET: Customer.MASS_MARKET,
+            Role.MANAGER_MM2: Customer.MM2,
+            Role.MANAGER_ECOMMERCE: Customer.ECOMMERCE,
+            Role.MANAGER_WHOLESALE: Customer.WHOLESALE,
+        }
+        department = department_mapping.get(user.profile.role)
+        customers = customers_query.filter(department=department) if department else Customer.objects.none()
+
+    # 🚀 Apply additional filters
+    if selected_department:
+        customers = customers.filter(department=selected_department)
+    if selected_salesperson:
+        customers = customers.filter(salesperson_id=selected_salesperson)
+
+    # 🚀 Fetch contacts based on filtered customers
+    contacts = Contact.objects.filter(customer__in=customers)
+
+    # 🚀 Apply contact-specific filters
+    if selected_status == "active":
+        contacts = contacts.filter(is_active=True)
+    elif selected_status == "inactive":
+        contacts = contacts.filter(is_active=False)
+
+    if search_query:
+        contacts = contacts.filter(name__icontains=search_query)
+
+    # 🚀 Create the CSV response
     response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="contacts.csv"'
+    response['Content-Disposition'] = 'attachment; filename="filtered_contacts.csv"'
 
-    # Set up the CSV writer
+    # 🚀 Set up the CSV writer
     writer = csv.writer(response)
-    writer.writerow(['Name', 'Phone', 'Email', 'Customer', 'Relationship Score', 'Birthday Month', 'Birthday Day', 'Salesperson'])
+    writer.writerow(['Name', 'Phone', 'Email', 'Customer', 'Department', 'Relationship Score', 'Birthday Month', 'Birthday Day', 'Salesperson'])
 
-    # Write contact data to CSV
+    # 🚀 Write filtered contact data to CSV
     for contact in contacts:
         writer.writerow([
             contact.name,
             contact.phone if contact.phone else "N/A",
             contact.email if contact.email else "N/A",
-            contact.customer.name if contact.customer else "N/A",  # Handle missing customer
+            contact.customer.name if contact.customer else "N/A",
+            contact.customer.get_department_display() if contact.customer else "N/A",  # Fetch department name
             contact.relationship_score,
-            contact.get_birthday_month_display() if contact.birthday_month else "Not provided",  # Fetch month name
-            contact.birthday_day if contact.birthday_day else "Not provided",  # Fetch day
-            contact.customer.salesperson.user.get_full_name() if contact.customer and contact.customer.salesperson else "N/A"  # Fetch salesperson's name
+            contact.get_birthday_month_display() if contact.birthday_month else "Not provided",
+            contact.birthday_day if contact.birthday_day else "Not provided",
+            contact.customer.salesperson.user.get_full_name() if contact.customer and contact.customer.salesperson else "N/A"
         ])
 
     return response
 
 @login_required
 def export_customers(request):
-    """ Exports customers into a CSV file with key details """
+    """🚀 Export filtered customers based on user role and active filters."""
+    
+    user = request.user
+    selected_department = request.GET.get("department", "").strip()
+    selected_salesperson = request.GET.get("salesperson", "").strip()
+    search_query = request.GET.get("search", "").strip()
 
-    # Get customers associated with the logged-in salesperson
-    customers = Customer.objects.filter(salesperson=request.user.salesperson)
+    # 🚀 Determine which customers the user is allowed to export
+    if user.profile.role == Role.EXECUTIVE:
+        customers = Customer.objects.all()  # ✅ Executives export all customers
 
-    # Create the CSV response
+    elif "Manager" in user.profile.role:
+        # ✅ Managers: Export customers only from their department
+        department_mapping = {
+            Role.MANAGER_MASS_MARKET: Customer.MASS_MARKET,
+            Role.MANAGER_MM2: Customer.MM2,
+            Role.MANAGER_ECOMMERCE: Customer.ECOMMERCE,
+            Role.MANAGER_WHOLESALE: Customer.WHOLESALE,
+        }
+        department = department_mapping.get(user.profile.role, None)
+        customers = Customer.objects.filter(department=department) if department else Customer.objects.none()
+
+    elif user.profile.role == Role.SALESPERSON:
+        # ✅ Salespeople: Export only their own customers
+        customers = Customer.objects.filter(salesperson=user.salesperson)
+
+    else:
+        return HttpResponse("You are not authorized to export customers.", status=403)
+
+    # 🚀 Apply active filters from GET parameters
+    if selected_department:
+        customers = customers.filter(department=selected_department)
+    if selected_salesperson:
+        customers = customers.filter(salesperson_id=selected_salesperson)
+    if search_query:
+        customers = customers.filter(name__icontains=search_query)
+
+    # 🚀 Create the CSV response
     response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="customers.csv"'
+    response['Content-Disposition'] = 'attachment; filename="filtered_customers.csv"'
 
-    # Set up the CSV writer
+    # 🚀 Set up the CSV writer
     writer = csv.writer(response)
     writer.writerow(['Name', 'Department', 'Estimated Yearly Sales', 'Salesperson'])
 
-    # Write customer data to CSV
+    # 🚀 Write filtered customer data to CSV
     for customer in customers:
         writer.writerow([
             customer.name,
-            customer.get_department_display(),  # Use display name for department
-            f"${customer.estimated_yearly_sales:,.0f}",  # Format sales with commas and no decimals
-            customer.salesperson.user.get_full_name() if customer.salesperson else "N/A"  # Fetch salesperson's name
+            customer.get_department_display(),  # ✅ Human-readable department name
+            f"${customer.estimated_yearly_sales:,.0f}",  # ✅ Format sales
+            customer.salesperson.user.get_full_name() if customer.salesperson else "N/A"  # ✅ Salesperson name
         ])
 
     return response
