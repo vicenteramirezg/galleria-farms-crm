@@ -14,10 +14,10 @@ def send_whatsapp_birthday_message(salesperson, contact):
     message_params = {
         "1": salesperson.user.first_name,  # {{1}} Salesperson name
         "2": contact.name,  # {{2}} Contact name
-        "3": contact.customer.name,  # {{3}} Contact Customer
-        "4": contact.phone if contact.phone else "N/A",  # {{4}} Phone
-        "5": contact.email if contact.email else "N/A",  # {{5}} Email
-        "6": f"https://wa.me/{contact.phone}" if contact.phone else "N/A"  # {{6}} WhatsApp link
+        "3": contact.customer.name  # {{3}} Contact Customer
+        #"4": contact.phone if contact.phone else "N/A",  # {{4}} Phone
+        #"5": contact.email if contact.email else "N/A",  # {{5}} Email
+        #"6": f"https://wa.me/{contact.phone}" if contact.phone else "N/A"  # {{6}} WhatsApp link
     }
 
     # ✅ Convert message_params to a proper JSON string
@@ -27,7 +27,7 @@ def send_whatsapp_birthday_message(salesperson, contact):
     message = client.messages.create(
         from_=settings.TWILIO_WHATSAPP_NUMBER,
         to=f"whatsapp:{salesperson.phone}",
-        content_sid="HXf36593d271b10ea2a531772acf050256",  # Replace with your actual Template SID
+        content_sid="HX49ce7200e8fbe46e0045a434f57d0f41",  # Replace with your actual Template SID
         content_variables=content_variables_json  # ✅ Ensure correct JSON format
     )
     
