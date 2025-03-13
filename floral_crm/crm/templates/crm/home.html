@@ -12,8 +12,9 @@
 <!-- Features Section -->
 <section class="container text-center">
     <h2 class="mb-4">What You Can Do</h2>
-    <div class="row justify-content-center">  <!-- Centering cards properly -->
-        <div class="col-md-4 d-flex">
+    
+    <div class="row row-cols-1 row-cols-md-3 g-4">  
+        <div class="col d-flex">
             <div class="card feature-card shadow-sm border-light w-100">
                 <div class="card-body">
                     <h5 class="card-title">🔐 Private Customer & Contact Management</h5>
@@ -21,7 +22,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-4 d-flex">
+        <div class="col d-flex">
             <div class="card feature-card shadow-sm border-light w-100">
                 <div class="card-body">
                     <h5 class="card-title">📋 Organized Contact Information</h5>
@@ -29,7 +30,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-4 d-flex">
+        <div class="col d-flex">
             <div class="card feature-card shadow-sm border-light w-100">
                 <div class="card-body">
                     <h5 class="card-title">🎉 Never Miss a Birthday</h5>
@@ -37,10 +38,7 @@
                 </div>
             </div>
         </div>
-    </div>
-
-    <div class="row justify-content-center mt-5">  <!-- Added spacing between rows -->
-        <div class="col-md-4 d-flex">
+        <div class="col d-flex">
             <div class="card feature-card shadow-sm border-light w-100">
                 <div class="card-body">
                     <h5 class="card-title">🔒 Secure & Role-Based Access</h5>
@@ -48,7 +46,16 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-4 d-flex">
+        <div class="col d-flex">
+            <div class="card feature-card shadow-sm border-light w-100">
+                <div class="card-body text-center">
+                    <h5 class="card-title">📱 Access CRM Anywhere</h5>
+                    <p class="card-text">Install the CRM on your phone or computer for quick and easy access—whenever and wherever you need it.</p>
+                    <a href="{% url 'install' %}" class="btn btn-success mt-2">Install CRM App</a>
+                </div>
+            </div>
+        </div>
+        <div class="col d-flex">
             <div class="card feature-card shadow-sm border-light w-100">
                 <div class="card-body">
                     <h5 class="card-title">🔑 Simple & Secure Login</h5>
@@ -73,9 +80,6 @@
         box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.2);
     }
     
-    /* Increase spacing between the two rows */
-    .mt-5 {
-        margin-top: 3rem !important;
-    }
+    /* Bootstrap row-cols ensures responsiveness */
 </style>
 {% endblock %}
