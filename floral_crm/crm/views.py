@@ -538,21 +538,22 @@ def add_customer(request):
 
 @login_required
 def customer_list(request):
-    """🚀 Optimized customer list view as a pivot table with indexing, pagination, and efficient queries."""
+    """🚀 Optimized customer list with pagination, department grouping, and efficient queries."""
+    
     user = request.user
     selected_department = request.GET.get("department", "").strip()
     selected_salesperson = request.GET.get("salesperson", "").strip()
     search_query = request.GET.get("search", "").strip()
 
-    # **🚀 Start with All Customers (Ordered by Department & Name)**
+    # 🚀 Start with All Customers (Ordered by Department & Name)
     customers_query = Customer.objects.order_by("department", "name")
 
-    # **🚀 Apply Role-Based Filtering**
+    # 🚀 Apply Role-Based Filtering
     if user.profile.role == Role.EXECUTIVE:
         customers = customers_query  # ✅ Executives see all customers
     elif user.profile.role == Role.SALESPERSON:
-        customers = customers_query.filter(salesperson=user.salesperson)  # ✅ Salespeople see only their own customers
-    else:  # ✅ Managers see only their department
+        customers = customers_query.filter(salesperson=user.salesperson)  # ✅ Salespeople see only their customers
+    else:  # ✅ Managers see only their department customers
         department_mapping = {
             Role.MANAGER_MASS_MARKET: Customer.MASS_MARKET,
             Role.MANAGER_MM2: Customer.MM2,
@@ -562,7 +563,7 @@ def customer_list(request):
         department = department_mapping.get(user.profile.role, None)
         customers = customers_query.filter(department=department) if department else Customer.objects.none()
 
-    # **🚀 Apply Filters**
+    # 🚀 Apply Filters
     if selected_department:
         customers = customers.filter(department=selected_department)
     if selected_salesperson:
@@ -570,23 +571,28 @@ def customer_list(request):
     if search_query:
         customers = customers.filter(name__icontains=search_query)
 
-    # **🚀 Optimize Query Execution with `.only()` & `.select_related()`**
+    # 🚀 Optimize Query Execution with `.only()` & `.select_related()`
     customers = customers.select_related("salesperson__user").annotate(
         avg_relationship_score=Avg("contacts__relationship_score")
     ).only("id", "name", "department", "estimated_yearly_sales", "salesperson")
 
-    # **🚀 Organize Customers by Department**
+    # 🚀 Organize Customers by Department (Grouping)
     grouped_customers = defaultdict(list)
     for customer in customers:
-        grouped_customers[customer.get_department_display()].append(customer)  # ✅ Use human-readable department
+        grouped_customers[customer.get_department_display()].append(customer)  # ✅ Human-readable department name
 
-    # **🚀 Pagination**
-    # **🚀 Pagination: Show 20 customers per page (adjust as needed)**
-    paginator = Paginator(customers, 20)  # ✅ Show 20 customers per page
+    # 🚀 Flatten the grouped structure for pagination (preserve department context)
+    flattened_customers = []
+    for department, customer_list in sorted(grouped_customers.items()):  # ✅ Sorted by Department Name
+        for idx, customer in enumerate(customer_list):
+            flattened_customers.append((department if idx == 0 else None, customer))  # ✅ Show department name only once
+
+    # 🚀 Pagination: Show 20 customers per page
+    paginator = Paginator(flattened_customers, 20)
     page_number = request.GET.get("page")
     customers_paginated = paginator.get_page(page_number)
 
-    # **🚀 Optimize Salespeople Query**
+    # 🚀 Optimize Salespeople Query
     available_salespeople = Salesperson.objects.filter(
         customers__isnull=False
     ).distinct().only("id", "user__first_name", "user__last_name").order_by("user__first_name", "user__last_name")

@@ -1,14 +1,13 @@
 {% extends "crm/base.html" %}
+{% load humanize %}
 
 {% block title %}Customers - CRM{% endblock %}
-
-{% load humanize %}
 
 {% block content %}
 <div class="container py-5">
     <h1 class="text-center display-4 font-weight-bold mb-4">Customers</h1>
 
-    <!-- Filtering Options -->
+    <!-- 🚀 Filtering Options -->
     <div class="filter-container">
         <form method="get" class="row g-2">
             {% if user.profile.role == "Executive" %}
@@ -52,14 +51,7 @@
         </form>
     </div>
 
-    <!-- 🚀 Add Customer Button -->
-    <div class="text-center mt-4">
-        <a href="{% url 'crm:add_customer' %}" class="btn btn-primary btn-lg">
-            <i class="fas fa-plus"></i> Add Customer
-        </a>
-    </div>
-
-    <!-- Customer Table (Pivoted by Department) -->
+    <!-- 🚀 Customer Table -->
     <div class="table-responsive mt-4">
         <table class="table table-striped shadow-sm">
             <thead class="thead-dark">
@@ -73,10 +65,11 @@
                 </tr>
             </thead>
             <tbody>
-                {% for customer in customers_paginated %}
+                {% for department, customer in customers_paginated %}
                 <tr>
-                    {% if forloop.first %}
-                        <td rowspan="{{ customers|length }}" class="align-top fw-bold">
+                    {% if department %}
+                        <!-- ✅ Show Department Name Only for the First Customer in Each Department -->
+                        <td rowspan="{{ customers_paginated|length }}" class="align-top fw-bold">
                             {{ department }}
                         </td>
                     {% endif %}
@@ -99,7 +92,7 @@
         </table>
     </div>
 
-    <!-- 🚀 Pagination Controls (Below the Table) -->
+    <!-- 🚀 Pagination Controls -->
     {% if customers_paginated.paginator.num_pages > 1 %}
     <div class="pagination justify-content-center mt-4">
         <ul class="pagination">
@@ -107,15 +100,14 @@
                 <li class="page-item"><a class="page-link" href="?page=1">&laquo; First</a></li>
                 <li class="page-item"><a class="page-link" href="?page={{ customers_paginated.previous_page_number }}">Previous</a></li>
             {% endif %}
-
             <li class="page-item active"><span class="page-link">Page {{ customers_paginated.number }} of {{ customers_paginated.paginator.num_pages }}</span></li>
-
             {% if customers_paginated.has_next %}
                 <li class="page-item"><a class="page-link" href="?page={{ customers_paginated.next_page_number }}">Next</a></li>
                 <li class="page-item"><a class="page-link" href="?page={{ customers_paginated.paginator.num_pages }}">Last &raquo;</a></li>
             {% endif %}
         </ul>
     </div>
+    {% endif %}
 
     <!-- 🚀 Go To Page Feature -->
     <div class="text-center mt-3">
