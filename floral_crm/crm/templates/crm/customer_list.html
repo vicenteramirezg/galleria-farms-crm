@@ -67,7 +67,7 @@
             <tbody>
                 {% for customer in customers_paginated %}
                     {% if forloop.first or customer.department != previous_department %}
-                        <!-- ✅ Print Department Row -->
+                        <!-- ✅ Print Department Row as a separate row -->
                         <tr class="table-secondary">
                             <td colspan="6" class="fw-bold">{{ customer.get_department_display }}</td>
                         </tr>
@@ -76,17 +76,23 @@
                     <tr>
                         <td></td> <!-- Empty cell for department column -->
                         <td>
-                            <a href="{% url 'crm:customer_detail' customer.id %}" class="text-decoration-none fw-bold">
-                                {{ customer.name }}
-                            </a>
+                            {% if customer.id %}
+                                <a href="{% url 'crm:customer_detail' customer.id %}" class="text-decoration-none fw-bold">
+                                    {{ customer.name }}
+                                </a>
+                            {% else %}
+                                {{ customer.name }} <!-- ✅ If no ID, just display name without link -->
+                            {% endif %}
                         </td>
                         <td>{{ customer.salesperson.user.get_full_name }}</td>
                         <td>${{ customer.estimated_yearly_sales|intcomma }}</td>
                         <td>{{ customer.avg_relationship_score|floatformat:2 }}</td>
                         <td>
-                            <a href="{% url 'crm:customer_edit' customer.id %}" class="btn btn-sm btn-outline-primary">
-                                <i class="fas fa-edit"></i> Edit
-                            </a>
+                            {% if customer.id %}
+                                <a href="{% url 'crm:customer_edit' customer.id %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-edit"></i> Edit
+                                </a>
+                            {% endif %}
                         </td>
                     </tr>
 
@@ -124,20 +130,7 @@
         </form>
     </div>
 
-    <script>
-        document.getElementById("goToPageForm").addEventListener("submit", function(event) {
-            event.preventDefault();
-            var pageInput = document.getElementById("goToPage").value;
-            var totalPages = {{ customers_paginated.paginator.num_pages }};
-            if (pageInput >= 1 && pageInput <= totalPages) {
-                window.location.href = "?page=" + pageInput;
-            } else {
-                alert("Invalid page number. Please enter a number between 1 and " + totalPages + ".");
-            }
-        });
-    </script>
-
-    <!-- 🚀 Export Customers Button (Now Includes Active Filters) -->
+    <!-- 🚀 Export Customers Button -->
     <div class="text-center mt-4">
         <a href="{% url 'crm:export_customers' %}?department={{ selected_department }}&salesperson={{ selected_salesperson }}&search={{ search_query }}" 
         class="btn btn-success btn-lg">
