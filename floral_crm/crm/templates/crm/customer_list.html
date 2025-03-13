@@ -1,13 +1,14 @@
 {% extends "crm/base.html" %}
-{% load humanize %}
 
 {% block title %}Customers - CRM{% endblock %}
+
+{% load humanize %}
 
 {% block content %}
 <div class="container py-5">
     <h1 class="text-center display-4 font-weight-bold mb-4">Customers</h1>
 
-    <!-- 🚀 Filtering Options -->
+    <!-- Filtering Options -->
     <div class="filter-container">
         <form method="get" class="row g-2">
             {% if user.profile.role == "Executive" %}
@@ -51,7 +52,14 @@
         </form>
     </div>
 
-    <!-- 🚀 Customer Table -->
+    <!-- 🚀 Add Customer Button -->
+    <div class="text-center mt-4">
+        <a href="{% url 'crm:add_customer' %}" class="btn btn-primary btn-lg">
+            <i class="fas fa-plus"></i> Add Customer
+        </a>
+    </div>
+
+    <!-- Customer Table (Pivoted by Department) -->
     <div class="table-responsive mt-4">
         <table class="table table-striped shadow-sm">
             <thead class="thead-dark">
@@ -65,60 +73,55 @@
                 </tr>
             </thead>
             <tbody>
-                {% for customer in customers_paginated %}
-                    {% if forloop.first or customer.department != previous_department %}
-                        <!-- ✅ Print Department Row as a separate row -->
-                        <tr class="table-secondary">
-                            <td colspan="6" class="fw-bold">{{ customer.get_department_display }}</td>
-                        </tr>
-                    {% endif %}
-                    
+                {% for department, customers in grouped_customers_paginated %}
+                    {% for customer in customers %}
                     <tr>
-                        <td></td> <!-- Empty cell for department column -->
+                        {% if forloop.first %}
+                            <td rowspan="{{ customers|length }}" class="align-top fw-bold">
+                                {{ department }}
+                            </td>
+                        {% endif %}
                         <td>
-                            {% if customer.id %}
-                                <a href="{% url 'crm:customer_detail' customer.id %}" class="text-decoration-none fw-bold">
-                                    {{ customer.name }}
-                                </a>
-                            {% else %}
-                                {{ customer.name }} <!-- ✅ If no ID, just display name without link -->
-                            {% endif %}
+                            <a href="{% url 'crm:customer_detail' customer.id %}" class="text-decoration-none fw-bold">
+                                {{ customer.name }}
+                            </a>
                         </td>
                         <td>{{ customer.salesperson.user.get_full_name }}</td>
                         <td>${{ customer.estimated_yearly_sales|intcomma }}</td>
                         <td>{{ customer.avg_relationship_score|floatformat:2 }}</td>
                         <td>
-                            {% if customer.id %}
-                                <a href="{% url 'crm:customer_edit' customer.id %}" class="btn btn-sm btn-outline-primary">
-                                    <i class="fas fa-edit"></i> Edit
-                                </a>
-                            {% endif %}
+                            <a href="{% url 'crm:customer_edit' customer.id %}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-edit"></i> Edit
+                            </a>
                         </td>
                     </tr>
-
-                    {% with previous_department=customer.department %}
-                    {% endwith %}
+                    {% endfor %}
+                {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center">No customers found.</td>
+                    </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 
-    <!-- 🚀 Pagination Controls -->
+    <!-- 🚀 Pagination Controls (Below the Table) -->
     {% if customers_paginated.paginator.num_pages > 1 %}
     <div class="pagination justify-content-center mt-4">
         <ul class="pagination">
             {% if customers_paginated.has_previous %}
-                <li class="page-item"><a class="page-link" href="?page=1">&laquo; First</a></li>
-                <li class="page-item"><a class="page-link" href="?page={{ customers_paginated.previous_page_number }}">Previous</a></li>
+                <li class="page-item"><a class="page-link" href="?page=1&department={{ selected_department }}&salesperson={{ selected_salesperson }}&search={{ search_query }}">« First</a></li>
+                <li class="page-item"><a class="page-link" href="?page={{ customers_paginated.previous_page_number }}&department={{ selected_department }}&salesperson={{ selected_salesperson }}&search={{ search_query }}">Previous</a></li>
             {% endif %}
+
             <li class="page-item active"><span class="page-link">Page {{ customers_paginated.number }} of {{ customers_paginated.paginator.num_pages }}</span></li>
+
             {% if customers_paginated.has_next %}
-                <li class="page-item"><a class="page-link" href="?page={{ customers_paginated.next_page_number }}">Next</a></li>
-                <li class="page-item"><a class="page-link" href="?page={{ customers_paginated.paginator.num_pages }}">Last &raquo;</a></li>
+                <li class="page-item"><a class="page-link" href="?page={{ customers_paginated.next_page_number }}&department={{ selected_department }}&salesperson={{ selected_salesperson }}&search={{ search_query }}">Next</a></li>
+                <li class="page-item"><a class="page-link" href="?page={{ customers_paginated.paginator.num_pages }}&department={{ selected_department }}&salesperson={{ selected_salesperson }}&search={{ search_query }}">Last »</a></li>
             {% endif %}
         </ul>
     </div>
-    {% endif %}
 
     <!-- 🚀 Go To Page Feature -->
     <div class="text-center mt-3">
@@ -127,13 +130,35 @@
             <input type="number" id="goToPage" class="form-control text-center" style="width: 70px;"
                    min="1" max="{{ customers_paginated.paginator.num_pages }}" value="{{ customers_paginated.number }}">
             <button type="submit" class="btn btn-primary ms-2">Go</button>
+            <!-- Hidden inputs to preserve filters -->
+            <input type="hidden" name="department" value="{{ selected_department }}">
+            <input type="hidden" name="salesperson" value="{{ selected_salesperson }}">
+            <input type="hidden" name="search" value="{{ search_query }}">
         </form>
     </div>
+
+    <script>
+        document.getElementById("goToPageForm").addEventListener("submit", function(event) {
+            event.preventDefault();
+            var pageInput = document.getElementById("goToPage").value;
+            var totalPages = {{ customers_paginated.paginator.num_pages }};
+            if (pageInput >= 1 && pageInput <= totalPages) {
+                var url = "?page=" + pageInput +
+                          "&department={{ selected_department }}" +
+                          "&salesperson={{ selected_salesperson }}" +
+                          "&search={{ search_query }}";
+                window.location.href = url;
+            } else {
+                alert("Invalid page number. Please enter a number between 1 and " + totalPages + ".");
+            }
+        });
+    </script>
+    {% endif %}
 
     <!-- 🚀 Export Customers Button -->
     <div class="text-center mt-4">
         <a href="{% url 'crm:export_customers' %}?department={{ selected_department }}&salesperson={{ selected_salesperson }}&search={{ search_query }}" 
-        class="btn btn-success btn-lg">
+           class="btn btn-success btn-lg">
             <i class="fas fa-file-export"></i> Export Customers as CSV
         </a>
     </div>
