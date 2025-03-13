@@ -14,12 +14,13 @@ handler404 = custom_404_view  # Assign the custom function
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('install/', TemplateView.as_view(template_name='registration/install.html'), name='install'),
     path('crm/', include('crm.urls')),  # Include CRM app URLs
     path('', TemplateView.as_view(template_name='crm/home.html'), name='home'),  # Root URL
     path('login/', LoginView.as_view(), name='login'),
     path('logout/', CustomLogoutView.as_view(), name='logout'),
     path('signup/', views.signup, name='signup'),
-    path('favicon.ico', RedirectView.as_view(url='/static/img/favicon.ico', permanent=True)),  # ✅ Redirect /favicon.ico to the correct path
+    path('favicon.ico', RedirectView.as_view(url='/static/img/favicon.ico', permanent=True)),
 
     # ✅ Password Reset URLs (Corrected for HTML email rendering)
     path(

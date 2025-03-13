@@ -1,0 +1,89 @@
+{% extends "crm/base.html" %}
+
+{% block title %}Install App - CRM{% endblock %}
+
+{% block content %}
+<!-- 🚀 Install Page Hero Section -->
+<div class="jumbotron text-center bg-light py-5">
+    <h1 class="display-4 font-weight-bold">Install Galleria Farms CRM 📲</h1>
+    <p class="lead">Quickly add our app to your home screen for easy access!</p>
+</div>
+
+<!-- 🚀 Installation Steps Section -->
+<section class="container text-center">
+    <h2 class="mb-4">How to Install</h2>
+    
+    <!-- 🚀 Instruction Cards -->
+    <div class="row justify-content-center">
+        <div class="col-md-4 d-flex">
+            <div class="card feature-card shadow-sm border-light w-100">
+                <div class="card-body">
+                    <h5 class="card-title">📤 iPhone (Safari)</h5>
+                    <p class="card-text">
+                        1️⃣ Tap the <strong>Share</strong> button (📤 at the bottom). <br>
+                        2️⃣ Scroll down and select <strong>"Add to Home Screen"</strong>. <br>
+                        3️⃣ Tap <strong>Add</strong> in the top right corner. ✅
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 d-flex">
+            <div class="card feature-card shadow-sm border-light w-100">
+                <div class="card-body">
+                    <h5 class="card-title">📱 Android (Chrome)</h5>
+                    <p class="card-text">
+                        1️⃣ Tap the menu (⋮) in Chrome. <br>
+                        2️⃣ Select <strong>"Install App"</strong> or <strong>"Add to Home Screen"</strong>. <br>
+                        3️⃣ Confirm and enjoy quick access! 🚀
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 🚀 Hidden iOS Alert (Shown via JS) -->
+<div id="iosInstallAlert" class="container text-center mt-4 alert alert-info" style="display: none;">
+    <h5>📢 Tip for iPhone Users:</h5>
+    <p>Tap the <strong>Share</strong> button (📤) and select <strong>"Add to Home Screen"</strong>!</p>
+</div>
+
+{% endblock %}
+
+{% block styles %}
+<style>
+    /* Match home page styles */
+    .feature-card {
+        transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+        border-radius: 10px;
+    }
+    .feature-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.2);
+    }
+    
+    /* Alert Styling */
+    #iosInstallAlert {
+        border-radius: 10px;
+        font-size: 1.1rem;
+        padding: 15px;
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function isIOS() {
+        return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    }
+
+    function isInStandaloneMode() {
+        return window.matchMedia('(display-mode: standalone)').matches;
+    }
+
+    // Show alert only if on iOS and not installed
+    if (isIOS() && !isInStandaloneMode()) {
+        document.getElementById("iosInstallAlert").style.display = "block";
+    }
+</script>
+{% endblock %}
