@@ -579,7 +579,7 @@ def customer_list(request):
     customer_list = list(customers)
 
     # **🚀 Pagination by Customers**
-    paginator = Paginator(customer_list, 10)  # ✅ Show 10 customers per page
+    paginator = Paginator(customer_list, 20)  # ✅ Show 10 customers per page
     page_number = request.GET.get("page")
     customers_paginated = paginator.get_page(page_number)
 
