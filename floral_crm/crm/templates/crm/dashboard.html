@@ -103,11 +103,21 @@
                         <td>{{ contact.name }}</td>
                         <td>{{ contact.customer.name }}</td>
                         <td>{{ contact.clean_birthday }}</td>
-                        <td>{{ contact.relationship_score }}</td>
+                        <!-- ⭐ Relationship Score as Stars -->
+                        <td>
+                            <div class="star-rating">
+                                {% for i in "12345"|make_list %}
+                                    {% if contact.relationship_score >= i|add:"0" %}
+                                        <span class="star checked">&#9733;</span>  <!-- Filled star -->
+                                    {% else %}
+                                        <span class="star">&#9733;</span>  <!-- Empty star -->
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </td>
                         <td>
                             <a href="tel:{{ contact.phone }}" class="text-decoration-none">
                                 {{ contact.phone }}
-                                <i class="fas fa-phone text-success"></i>
                             </a>
                         </td>
                         <td>
@@ -196,6 +206,22 @@
         max-width: 900px;
         height: 400px; /* Bigger for desktops */
         margin: auto;
+    }
+
+    .star-rating {
+    display: flex;
+    justify-content: flex-start; /* Aligns stars to the left */
+    align-items: center;
+    gap: 3px;
+    font-size: 1.2rem;
+    }
+
+    .star {
+        color: #ccc;
+    }
+
+    .star.checked {
+        color: #ffcc00; /* Yellow stars */
     }
 </style>
 

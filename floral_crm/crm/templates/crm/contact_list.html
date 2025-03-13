@@ -142,7 +142,7 @@
                         </td>
             
                         <td>
-                            <a href="{% url 'crm:contact_edit' contact.id %}" class="btn btn-sm btn-outline-primary">Edit</a>
+                            <a href="{% url 'crm:contact_edit' contact.id %}" class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i> Edit</a>
                         </td>
                     </tr>
                     {% endfor %}
@@ -187,11 +187,11 @@
 
 <style>
     .star-rating {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 3px;
-        font-size: 1.2rem;
+    display: flex;
+    justify-content: flex-start; /* Aligns stars to the left */
+    align-items: center;
+    gap: 3px;
+    font-size: 1.2rem;
     }
 
     .star {
