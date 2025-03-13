@@ -69,7 +69,7 @@
                 <tr>
                     {% if department %}
                         <!-- ✅ Show Department Name Only for the First Customer in Each Department -->
-                        <td rowspan="{{ customers_paginated|length }}" class="align-top fw-bold">
+                        <td class="align-top fw-bold" rowspan="{{ customers_paginated|length }}">
                             {{ department }}
                         </td>
                     {% endif %}
@@ -131,7 +131,6 @@
             }
         });
     </script>
-    {% endif %}
 
     <!-- 🚀 Export Customers Button (Now Includes Active Filters) -->
     <div class="text-center mt-4">
