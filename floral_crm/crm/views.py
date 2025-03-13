@@ -700,7 +700,7 @@ def executive_required(view_func):
 def executive_dashboard(request):
     """ View for Executives to see an overview of all users and their performance. """
     
-    users = Profile.objects.select_related("user").order_by("user__first_name", "user__last_name")
+    users = Profile.objects.select_related("user").order_by("user__username")
 
     user_data = []
     for profile in users:
@@ -726,7 +726,6 @@ def executive_dashboard(request):
         })
 
     return render(request, "crm/executive_dashboard.html", {"user_data": user_data})
-
 
 @login_required
 @executive_required
@@ -766,15 +765,17 @@ def manager_dashboard(request):
     department_name = user.profile.role.replace("Manager - ", "").lower()
 
     # Retrieve all salespeople under the managed department
-    salespeople = Salesperson.objects.filter(customers__department=department_name).distinct()
+    salespeople = Salesperson.objects.filter(customers__department=department_name).distinct().order_by("user__username")
 
     # Build the list of salesperson data
     salesperson_data = []
     for salesperson in salespeople:
         total_customers = Customer.objects.filter(salesperson=salesperson, department=department_name).count()
         total_contacts = Contact.objects.filter(customer__salesperson=salesperson, customer__department=department_name).count()
-        total_sales = Customer.objects.filter(salesperson=salesperson, department=department_name).aggregate(Sum("estimated_yearly_sales"))["estimated_yearly_sales__sum"] or 0
-        avg_relationship_score = Contact.objects.filter(customer__salesperson=salesperson, customer__department=department_name).aggregate(Avg("relationship_score"))["relationship_score__avg"] or 0
+        total_sales = Customer.objects.filter(salesperson=salesperson, department=department_name).aggregate(
+            Sum("estimated_yearly_sales"))["estimated_yearly_sales__sum"] or 0
+        avg_relationship_score = Contact.objects.filter(customer__salesperson=salesperson, customer__department=department_name).aggregate(
+            Avg("relationship_score"))["relationship_score__avg"] or 0
 
         salesperson_data.append({
             "username": salesperson.user.username,
@@ -786,4 +787,7 @@ def manager_dashboard(request):
             "avg_relationship_score": round(avg_relationship_score, 2) if avg_relationship_score else "N/A"
         })
 
-    return render(request, "crm/manager_dashboard.html", {"salesperson_data": salesperson_data, "department_name": department_name.capitalize()})
+    return render(request, "crm/manager_dashboard.html", {
+        "salesperson_data": salesperson_data,
+        "department_name": department_name.capitalize()
+    })
