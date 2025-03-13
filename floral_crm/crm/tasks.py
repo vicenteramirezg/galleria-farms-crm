@@ -7,6 +7,10 @@ MANAGER_PHONE = "+13055190251"
 MANAGER_NAME = "Veronica"
 MANAGER_EMAIL = "vacevedo@galleriafarms.com"
 
+ADMIN_PHONE = "+17868755569"
+ADMIN_NAME = "Vicente"
+ADMIN_EMAIL = "vramirez@galleriafarms.com"
+
 # ✅ Lazy model import to prevent "Apps aren't loaded yet" error
 def get_contact_model():
     from django.apps import apps
@@ -40,7 +44,18 @@ def send_birthday_reminders():
             contact
         )
 
-    return f"Sent {contacts.count()} birthday reminder emails (Salespeople & Manager)."
+        # ✅ Send email to the Admin (Vicente)
+        send_birthday_email(
+            type("Admin", (object,), {
+                "user": type("User", (object,), {
+                    "first_name": ADMIN_NAME,  # ✅ Properly include Vicente's name
+                    "email": ADMIN_EMAIL       # ✅ Properly include Vicente's email
+                })
+            }),
+            contact
+        )
+
+    return f"Sent {contacts.count()} birthday reminder emails (Salespeople & Manager & Admin)."
 
 @shared_task(name="crm.tasks.send_whatsapp_birthday_reminders")
 def send_whatsapp_birthday_reminders():
@@ -68,4 +83,13 @@ def send_whatsapp_birthday_reminders():
             contact
         )
 
-    return f"WhatsApp birthday reminders sent for {contacts.count()} contacts (Salespeople & Manager)."
+        # ✅ Send message to the admin (always)
+        send_whatsapp_birthday_message(
+            type("Admin", (object,), {
+                "phone": ADMIN_PHONE,
+                "user": type("User", (object,), {"first_name": ADMIN_NAME})  # ✅ Fixed Admin name
+            }),
+            contact
+        )
+
+    return f"WhatsApp birthday reminders sent for {contacts.count()} contacts (Salespeople & Manager & Admin)."
