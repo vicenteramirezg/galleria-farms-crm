@@ -145,7 +145,7 @@
                             {{ customer.name }}
                         </a>
                     </td>
-                    <td>${{ customer.sales|intcomma }}</td>
+                    <td>${{ customer.estimated_yearly_sales|intcomma }}</td> <!-- ✅ Correct field reference -->
                     <td>{{ customer.num_contacts }}</td>
                     <td>{{ customer.avg_score|floatformat:2 }}</td>
                 </tr>

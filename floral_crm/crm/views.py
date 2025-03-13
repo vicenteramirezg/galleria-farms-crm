@@ -87,28 +87,26 @@ MONTH_NAMES = {
 
 @login_required
 def dashboard(request):
-    """Optimized dashboard with accurate total sales, contacts, and indexed queries."""
+    """🚀 Optimized dashboard with accurate total sales, contacts, and indexed queries."""
     User = get_user_model()
     user = request.user
     salesperson = getattr(user, 'salesperson', None)
 
     # **🚀 Fetch Filter Parameters**
-    selected_department = request.GET.get("department", "")
-    selected_salesperson = request.GET.get("salesperson", "")
+    selected_department = request.GET.get("department", "").strip()
+    selected_salesperson = request.GET.get("salesperson", "").strip()
     selected_salesperson = int(selected_salesperson) if selected_salesperson.isdigit() else None
 
     # **🚀 Indexed Query: Filter Customers Efficiently**
-    customers_query = Customer.objects.only(
-        "id", "name", "department", "salesperson_id", "estimated_yearly_sales"
-    ).order_by("-estimated_yearly_sales")  # ✅ Uses `idx_customer_sales`
+    customers_query = Customer.objects.order_by("-estimated_yearly_sales")
 
     if user.profile.role == Role.EXECUTIVE:
         customers = customers_query
     elif "Manager" in user.profile.role:
         department_name = user.profile.role.replace("Manager - ", "").lower()
-        customers = customers_query.filter(department=department_name)  # ✅ Uses `idx_customer_department_salesperson`
+        customers = customers_query.filter(department=department_name)
     else:
-        customers = customers_query.filter(salesperson=salesperson)  # ✅ Uses `idx_customer_department_salesperson`
+        customers = customers_query.filter(salesperson=salesperson)
 
     # **🚀 Apply Additional Filters**
     if selected_department:
@@ -118,42 +116,41 @@ def dashboard(request):
         if salesperson_id:
             customers = customers.filter(salesperson_id=salesperson_id)
 
-    # **🚀 Correctly Compute Total Sales (Customer-Level Aggregation)**
+    # **🚀 Correctly Compute Total Sales**
     total_sales = customers.aggregate(total_sales=Sum("estimated_yearly_sales"))["total_sales"] or 0
 
-    # **🚀 Correctly Compute Total Contacts Count (No Duplicate Joins)**
+    # **🚀 Correctly Compute Total Contacts Count**
     total_contacts = Contact.objects.filter(customer__in=customers, is_active=True).count()
 
     # **🚀 Correctly Compute Avg Relationship Score**
     avg_relationship_score = Contact.objects.filter(customer__in=customers, is_active=True) \
         .aggregate(avg_score=Avg("relationship_score"))["avg_score"] or 0
 
-    # **🚀 Limit Displayed Customers to Top 10 (Now Includes `estimated_yearly_sales`)**
-    top_customers = customers[:10]
-    customer_data = top_customers.annotate(
+    # **🚀 Fetch Top Customers (Includes Estimated Sales)**
+    top_customers = customers.annotate(
         num_contacts=Count("contacts", filter=Q(contacts__is_active=True)),
         avg_score=Avg("contacts__relationship_score", filter=Q(contacts__is_active=True))
-    ).values("id", "name", "estimated_yearly_sales", "num_contacts", "avg_score")
+    ).values("id", "name", "estimated_yearly_sales", "num_contacts", "avg_score")[:10]
 
-    # **🚀 Optimize Upcoming Birthdays Query (Uses Indexed Query)**
+    # **🚀 Upcoming Birthdays Query**
     today = date.today()
     future_date = today + timedelta(days=30)
 
     upcoming_birthdays = Contact.objects.filter(
         customer__in=customers,
-        is_active=True,  # ✅ Uses `idx_contact_active`
+        is_active=True
     ).filter(
         Q(birthday_month=today.month, birthday_day__gte=today.day) |
         Q(birthday_month=future_date.month, birthday_day__lte=future_date.day) |
         Q(birthday_month__gt=today.month, birthday_month__lt=future_date.month)
-    ).order_by("birthday_month", "birthday_day").only("name", "birthday_month", "birthday_day")
+    ).order_by("birthday_month", "birthday_day").only("name", "birthday_month", "birthday_day", "customer")
 
     # **🚀 Format Birthdays Efficiently**
     for contact in upcoming_birthdays:
         month_name = MONTH_NAMES.get(contact.birthday_month, "Unknown")
         contact.clean_birthday = f"{month_name}, {contact.birthday_day}"
 
-    # **🚀 Fetch Departments & Available Salespeople Efficiently**
+    # **🚀 Fetch Departments & Available Salespeople**
     department_choices = dict(Customer.DEPARTMENT_CHOICES)
 
     available_salespeople = User.objects.filter(
@@ -161,11 +158,11 @@ def dashboard(request):
     ).distinct().only("id", "first_name", "last_name")
 
     return render(request, "crm/dashboard.html", {
-        "customers": customer_data,  # ✅ Uses indexed ordering
-        "total_sales": f"{total_sales:,.0f}",  # ✅ Correctly sums all customers
-        "total_contacts": total_contacts,  # ✅ Correct contact count
+        "customers": top_customers,  # ✅ Now includes estimated sales correctly
+        "total_sales": f"{total_sales:,.0f}",
+        "total_contacts": total_contacts,
         "avg_relationship_score": round(avg_relationship_score, 2) if avg_relationship_score else "N/A",
-        "top_customers": top_customers,  # ✅ Already limited to top 10
+        "top_customers": top_customers,
         "upcoming_birthdays": upcoming_birthdays,
         "department_choices": department_choices,
         "available_salespeople": available_salespeople,
