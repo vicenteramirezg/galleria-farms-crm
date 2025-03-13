@@ -581,9 +581,10 @@ def customer_list(request):
         grouped_customers[customer.get_department_display()].append(customer)  # ✅ Use human-readable department
 
     # **🚀 Pagination**
-    paginator = Paginator(list(grouped_customers.items()), 5)  # ✅ Show 5 departments per page
+    # **🚀 Pagination: Show 20 customers per page (adjust as needed)**
+    paginator = Paginator(customers, 20)  # ✅ Show 20 customers per page
     page_number = request.GET.get("page")
-    grouped_customers_paginated = paginator.get_page(page_number)
+    customers_paginated = paginator.get_page(page_number)
 
     # **🚀 Optimize Salespeople Query**
     available_salespeople = Salesperson.objects.filter(
@@ -591,7 +592,7 @@ def customer_list(request):
     ).distinct().only("id", "user__first_name", "user__last_name").order_by("user__first_name", "user__last_name")
 
     return render(request, "crm/customer_list.html", {
-        "grouped_customers_paginated": grouped_customers_paginated,  # ✅ Paginated results
+        "customers_paginated": customers_paginated,  # ✅ Paginated results
         "department_choices": dict(Customer.DEPARTMENT_CHOICES),
         "available_salespeople": available_salespeople,
         "selected_department": selected_department,
