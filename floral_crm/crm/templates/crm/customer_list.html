@@ -59,19 +59,34 @@
         </a>
     </div>
 
-    <!-- Customer Table (Pivoted by Department) -->
+    <!-- 🚀 Customer Table (Pivoted by Department) -->
     <div class="table-responsive mt-4">
         <table class="table table-striped shadow-sm">
             <thead class="thead-dark">
                 <tr>
-                    <th>Department</th>
-                    <th>Customer Name</th>
-                    <th>Salesperson</th>
-                    <th>Estimated Yearly Sales</th>
-                    <th>Avg. Relationship Score</th>
-                    <th>Actions</th> 
+                    <th>
+                        <a href="?sort=department&order={% if sort == 'department' and order == 'asc' %}desc{% else %}asc{% endif %}"
+                           class="sort-link">Department</a>
+                    </th>
+                    <th>
+                        <a href="?sort=name&order={% if sort == 'name' and order == 'asc' %}desc{% else %}asc{% endif %}"
+                           class="sort-link">Customer Name</a>
+                    </th>
+                    <th>
+                        <a href="?sort=salesperson&order={% if sort == 'salesperson' and order == 'asc' %}desc{% else %}asc{% endif %}"
+                           class="sort-link">Salesperson</a>
+                    </th>
+                    <th>
+                        <a href="?sort=estimated_yearly_sales&order={% if sort == 'estimated_yearly_sales' and order == 'asc' %}desc{% else %}asc{% endif %}"
+                           class="sort-link">Estimated Yearly Sales</a>
+                    </th>
+                    <th>
+                        <a href="?sort=avg_relationship_score&order={% if sort == 'avg_relationship_score' and order == 'asc' %}desc{% else %}asc{% endif %}"
+                           class="sort-link">Avg. Relationship Score</a>
+                    </th>
+                    <th>Actions</th>
                 </tr>
-            </thead>
+            </thead>                        
             <tbody>
                 {% for department, customers in grouped_customers_paginated %}
                     {% for customer in customers %}
@@ -96,10 +111,6 @@
                         </td>
                     </tr>
                     {% endfor %}
-                {% empty %}
-                    <tr>
-                        <td colspan="6" class="text-center">No customers found.</td>
-                    </tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -163,4 +174,18 @@
         </a>
     </div>
 </div>
+
+<style>
+    /* Styling for sortable table headers */
+    .sort-link {
+        color: black !important; /* Make it black */
+        text-decoration: underline !important; /* Underline */
+        font-weight: bold;
+        cursor: pointer;
+    }
+    .sort-link:hover {
+        color: #333 !important; /* Darker on hover */
+    }
+</style>
+
 {% endblock %}

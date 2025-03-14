@@ -544,11 +544,14 @@ def add_customer(request):
 
 @login_required
 def customer_list(request):
-    """🚀 Optimized customer list view with pagination by customers, grouped by department."""
+    """🚀 Optimized customer list view with pagination by customers, grouped by department, and sorting."""
+    
     user = request.user
     selected_department = request.GET.get("department", "").strip()
     selected_salesperson = request.GET.get("salesperson", "").strip()
     search_query = request.GET.get("search", "").strip()
+    sort = request.GET.get("sort", "name")  # Default sorting: name
+    order = request.GET.get("order", "asc")  # Default order: ascending
 
     # **🚀 Start with All Customers (Ordered by Department & Name)**
     customers_query = Customer.objects.order_by("department", "name")
@@ -577,6 +580,26 @@ def customer_list(request):
     if search_query:
         customers = customers.filter(name__icontains=search_query)
 
+    # **🚀 Sorting Logic (Ensure annotation exists before ordering)**
+    sort_options = {
+        "name": "name",
+        "department": "department",  # ✅ Added department sorting
+        "estimated_yearly_sales": "estimated_yearly_sales",
+        "avg_relationship_score": "avg_relationship_score_annotated",  # ✅ Using annotation name
+        "salesperson": "salesperson__user__first_name",  # ✅ Sort by Salesperson's first name
+    }
+
+    # **🚀 Apply annotation before sorting**
+    customers = customers.annotate(
+        avg_relationship_score_annotated=Avg("contacts__relationship_score")  # Rename annotation
+    ).select_related("salesperson__user").only("id", "name", "department", "estimated_yearly_sales", "salesperson")
+
+    if sort in sort_options:
+        sort_field = sort_options[sort]
+        if order == "desc":
+            sort_field = f"-{sort_field}"  # Apply descending order
+        customers = customers.order_by(sort_field)
+
     # **🚀 Optimize Query Execution**
     customers = customers.select_related("salesperson__user").annotate(
         avg_relationship_score=Avg("contacts__relationship_score")
@@ -586,7 +609,7 @@ def customer_list(request):
     customer_list = list(customers)
 
     # **🚀 Pagination by Customers**
-    paginator = Paginator(customer_list, 20)  # ✅ Show 10 customers per page
+    paginator = Paginator(customer_list, 20)  # ✅ Show 20 customers per page
     page_number = request.GET.get("page")
     customers_paginated = paginator.get_page(page_number)
 
@@ -601,13 +624,15 @@ def customer_list(request):
     ).distinct().only("id", "user__first_name", "user__last_name").order_by("user__first_name", "user__last_name")
 
     return render(request, "crm/customer_list.html", {
-        "grouped_customers_paginated": grouped_customers.items(),  # ✅ Pass as items() for template compatibility
-        "customers_paginated": customers_paginated,  # ✅ Pass paginated object for pagination controls
+        "grouped_customers_paginated": grouped_customers.items(),
+        "customers_paginated": customers_paginated,
         "department_choices": dict(Customer.DEPARTMENT_CHOICES),
         "available_salespeople": available_salespeople,
         "selected_department": selected_department,
         "selected_salesperson": selected_salesperson,
         "search_query": search_query,
+        "sort": sort,  # ✅ Pass sort field to template
+        "order": order,  # ✅ Pass order to template
     })
 
 @login_required
