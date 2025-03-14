@@ -13,6 +13,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='customer',
             name='department',
-            field=models.CharField(choices=[('mass_market', 'Mass Market'), ('mm2', 'MM2'), ('ecommerce', 'Ecommerce'), ('wholesale', 'Wholesale')], default='mass_market', max_length=20),
+            field=models.CharField(choices=[('mass_market', 'Mass Market'), ('mm2', 'MM2'), ('ecommerce', 'Ecommerce'), ('wholesale', 'Wholesale'), ('international', 'International')], default='mass_market', max_length=20),
         ),
     ]

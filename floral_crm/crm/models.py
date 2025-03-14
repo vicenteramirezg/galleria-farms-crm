@@ -18,6 +18,7 @@ class Role(models.TextChoices):
     MANAGER_MM2 = "Manager - MM2", "Manager - MM2"
     MANAGER_ECOMMERCE = "Manager - Ecommerce", "Manager - Ecommerce"
     MANAGER_WHOLESALE = "Manager - Wholesale", "Manager - Wholesale"
+    MANAGER_INTERNATIONAL = "Manager - International", "Manager - International"
 
 class Profile(BaseModel):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -41,12 +42,14 @@ class Customer(BaseModel):
     MM2 = 'mm2'
     ECOMMERCE = 'ecommerce'
     WHOLESALE = 'wholesale'
+    INTERNATIONAL = 'international'
 
     DEPARTMENT_CHOICES = [
         (MASS_MARKET, 'Mass Market'),
         (MM2, 'MM2'),
         (ECOMMERCE, 'Ecommerce'),
         (WHOLESALE, 'Wholesale'),
+        (INTERNATIONAL, 'International')
     ]
 
     name = models.CharField(max_length=255, unique=True)

@@ -195,6 +195,7 @@ class CustomerUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
                 "Manager - MM2": Customer.MM2,
                 "Manager - Ecommerce": Customer.ECOMMERCE,
                 "Manager - Wholesale": Customer.WHOLESALE,
+                "Manager - International": Customer.INTERNATIONAL,
             }
             department = role_to_department.get(user.profile.role, None)
 
@@ -219,6 +220,7 @@ class CustomerUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
                 "Manager - MM2": Customer.MM2,
                 "Manager - Ecommerce": Customer.ECOMMERCE,
                 "Manager - Wholesale": Customer.WHOLESALE,
+                "Manager - International": Customer.INTERNATIONAL,
             }
             department = role_to_department.get(user.profile.role, None)
             if department:
@@ -294,6 +296,7 @@ class ContactUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
                 "Manager - MM2": Customer.MM2,
                 "Manager - Ecommerce": Customer.ECOMMERCE,
                 "Manager - Wholesale": Customer.WHOLESALE,
+                "Manager - International": Customer.INTERNATIONAL,
             }
             department = role_to_department.get(user.profile.role, None)
 
@@ -318,6 +321,7 @@ class ContactUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
                 "Manager - MM2": Customer.MM2,
                 "Manager - Ecommerce": Customer.ECOMMERCE,
                 "Manager - Wholesale": Customer.WHOLESALE,
+                "Manager - International": Customer.INTERNATIONAL,
             }
             department = role_to_department.get(user.profile.role, None)
             if department:
@@ -372,6 +376,7 @@ def export_contacts(request):
             Role.MANAGER_MM2: Customer.MM2,
             Role.MANAGER_ECOMMERCE: Customer.ECOMMERCE,
             Role.MANAGER_WHOLESALE: Customer.WHOLESALE,
+            Role.MANAGER_INTERNATIONAL: Customer.INTERNATIONAL,
         }
         department = department_mapping.get(user.profile.role)
         customers = customers_query.filter(department=department) if department else Customer.objects.none()
@@ -438,6 +443,7 @@ def export_customers(request):
             Role.MANAGER_MM2: Customer.MM2,
             Role.MANAGER_ECOMMERCE: Customer.ECOMMERCE,
             Role.MANAGER_WHOLESALE: Customer.WHOLESALE,
+            Role.MANAGER_INTERNATIONAL: Customer.INTERNATIONAL,
         }
         department = department_mapping.get(user.profile.role, None)
         customers = Customer.objects.filter(department=department) if department else Customer.objects.none()
@@ -558,6 +564,7 @@ def customer_list(request):
             Role.MANAGER_MM2: Customer.MM2,
             Role.MANAGER_ECOMMERCE: Customer.ECOMMERCE,
             Role.MANAGER_WHOLESALE: Customer.WHOLESALE,
+            Role.MANAGER_INTERNATIONAL: Customer.INTERNATIONAL,
         }
         department = department_mapping.get(user.profile.role, None)
         customers = customers_query.filter(department=department) if department else Customer.objects.none()
@@ -627,6 +634,7 @@ def contact_list(request):
             Role.MANAGER_MM2: Customer.MM2,
             Role.MANAGER_ECOMMERCE: Customer.ECOMMERCE,
             Role.MANAGER_WHOLESALE: Customer.WHOLESALE,
+            Role.MANAGER_INTERNATIONAL: Customer.INTERNATIONAL,
         }
         department = department_mapping.get(user.profile.role)
         customers = customers_query.filter(department=department) if department else Customer.objects.none()
@@ -818,7 +826,7 @@ def update_user_role(request):
         user_to_update = get_object_or_404(Profile, user_id=user_id)
         if new_role in [
             Role.EXECUTIVE, Role.MANAGER_MASS_MARKET, Role.MANAGER_MM2, 
-            Role.MANAGER_ECOMMERCE, Role.MANAGER_WHOLESALE, Role.SALESPERSON
+            Role.MANAGER_ECOMMERCE, Role.MANAGER_WHOLESALE, Role.MANAGER_INTERNATIONAL, Role.SALESPERSON
         ]:
             user_to_update.role = new_role
             user_to_update.save()

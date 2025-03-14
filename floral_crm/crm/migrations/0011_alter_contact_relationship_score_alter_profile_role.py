@@ -18,6 +18,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='profile',
             name='role',
-            field=models.CharField(choices=[('Executive', 'Executive'), ('Salesperson', 'Salesperson'), ('Manager - Mass Market', 'Manager - Mass Market'), ('Manager - MM2', 'Manager - MM2'), ('Manager - Ecommerce', 'Manager - Ecommerce'), ('Manager - Wholesale', 'Manager - Wholesale')], default='Salesperson', max_length=30),
+            field=models.CharField(choices=[('Executive', 'Executive'), ('Salesperson', 'Salesperson'), ('Manager - Mass Market', 'Manager - Mass Market'), ('Manager - MM2', 'Manager - MM2'), ('Manager - Ecommerce', 'Manager - Ecommerce'), ('Manager - Wholesale', 'Manager - Wholesale'), ('Manager - International', 'Manager - International')], default='Salesperson', max_length=30),
         ),
     ]
