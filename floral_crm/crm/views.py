@@ -637,13 +637,15 @@ def customer_list(request):
 
 @login_required
 def contact_list(request):
-    """🚀 Optimized Contact List with Pagination & Indexed Queries"""
+    """🚀 Optimized Contact List with Sorting, Pagination & Indexed Queries"""
     
     user = request.user
     selected_department = request.GET.get("department", "").strip()
     selected_salesperson = request.GET.get("salesperson", "").strip()
     selected_status = request.GET.get("status", "all").strip()
     search_query = request.GET.get("search", "").strip()
+    sort = request.GET.get("sort", "customer")  # Default sort by customer
+    order = request.GET.get("order", "asc")  # Default order is ascending
     page = request.GET.get("page", 1)
 
     # **🚀 Fetch Customers (Used for Filtering Contacts)**
@@ -675,8 +677,8 @@ def contact_list(request):
         Contact.objects
         .filter(customer__in=customers)
         .select_related("customer")  # Optimized join
+        .annotate(avg_relationship_score=Avg("relationship_score"))  # For sorting
         .only("id", "name", "email", "phone", "birthday_day", "birthday_month", "relationship_score", "is_active", "customer__id", "customer__name")
-        .order_by("customer__name", "name")  # Proper ordering
     )
 
     # **🚀 Apply Contact Filters**
@@ -687,6 +689,19 @@ def contact_list(request):
 
     if search_query:
         contacts_query = contacts_query.filter(name__icontains=search_query)
+
+    # **🚀 Sorting Logic**
+    sort_options = {
+        "customer": "customer__name",
+        "contact_name": "name",
+        "relationship_score": "avg_relationship_score",
+    }
+
+    if sort in sort_options:
+        sort_field = sort_options[sort]
+        if order == "desc":
+            sort_field = f"-{sort_field}"
+        contacts_query = contacts_query.order_by(sort_field)
 
     # **🚀 Pagination (20 contacts per page)**
     paginator = Paginator(contacts_query, 20)
@@ -715,6 +730,8 @@ def contact_list(request):
         "selected_salesperson": selected_salesperson,
         "selected_status": selected_status,
         "search_query": search_query,
+        "sort": sort,
+        "order": order,
     })
 
 @login_required

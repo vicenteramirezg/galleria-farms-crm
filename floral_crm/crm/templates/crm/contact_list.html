@@ -70,13 +70,21 @@
         <table class="table table-striped shadow-sm">
             <thead class="thead-dark">
                 <tr>
-                    <th>Customer</th>
-                    <th>Contact Name</th>
+                    <th>
+                        <a href="?sort=customer&order={% if sort == 'customer' and order == 'asc' %}desc{% else %}asc{% endif %}"
+                           class="sort-link">Customer</a>
+                    </th>
+                    <th>
+                        <a href="?sort=contact_name&order={% if sort == 'contact_name' and order == 'asc' %}desc{% else %}asc{% endif %}"
+                           class="sort-link">Contact Name</a>
+                    </th>
                     <th>Email</th>
                     <th>Phone</th>
                     <th>Birthday</th>
-                    <th>Relationship Score</th>
-                    <th>Status</th>
+                    <th>
+                        <a href="?sort=relationship_score&order={% if sort == 'relationship_score' and order == 'asc' %}desc{% else %}asc{% endif %}"
+                           class="sort-link">Relationship Score</a>
+                    </th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -201,6 +209,13 @@
 
     .star.checked {
         color: #ffcc00; /* Yellow stars */
+    }
+
+    .sort-link {
+        color: black !important;
+        text-decoration: underline !important;
+        font-weight: bold;
+        cursor: pointer;
     }
 </style>
 {% endblock %}
