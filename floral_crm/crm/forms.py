@@ -1,5 +1,5 @@
 from django import forms
-from .models import Customer, Contact, Salesperson, Role
+from .models import Customer, Contact, Salesperson, Role, Gift, GiftAssignment, GiftSeason, GiftAssignmentStatus
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
 
@@ -173,3 +173,19 @@ class SignupForm(UserCreationForm):
                 salesperson.save()
 
         return user
+    
+class GiftAssignmentForm(forms.Form):
+    gift_season = forms.ModelChoiceField(queryset=GiftSeason.objects.all(), label="Select Season")
+    gift = forms.ModelChoiceField(queryset=Gift.objects.all(), label="Select Gift")
+
+class GiftSeasonForm(forms.ModelForm):
+    class Meta:
+        model = GiftSeason
+        fields = ["name", "date"]  # ✅ Added occasion_date
+        labels = {
+            "name": "Season Name",
+            "date": "Occasion Date",
+        }
+        widgets = {
+            "date": forms.DateInput(attrs={"type": "date"}),  # HTML5 date picker
+        }

@@ -19,14 +19,15 @@ from django.db.models import Sum, Avg, Count, Q
 from django.db.models.functions import ExtractMonth, ExtractDay
 
 # Models and forms
-from .models import Customer, Contact, Salesperson, Profile, Role
-from .forms import CustomerForm, ContactForm, SignupForm  # Ensure you have this form
+from .models import Customer, Contact, Salesperson, Profile, Role, Gift, GiftAssignment, GiftSeason, GiftAssignmentStatus
+from .forms import CustomerForm, ContactForm, SignupForm, GiftAssignmentForm, GiftSeasonForm  # Ensure you have this form
 
 # Python standard library imports
 import csv
 from collections import defaultdict
 import logging
-from datetime import timedelta, date
+from datetime import timedelta, date, datetime
+import json
 
 logger = logging.getLogger(__name__)  # Setup logging for debugging
 
@@ -918,3 +919,120 @@ def manager_dashboard(request):
         "salesperson_data": salesperson_data,
         "department_name": department_name.capitalize()
     })
+
+def gift_planning(request, season_id):
+    """ Assign gifts to contacts for a specific season """
+    season = get_object_or_404(GiftSeason, id=season_id)
+
+    # Fetch all active contacts & related customer/salesperson data
+    contacts = Contact.objects.filter(is_active=True).select_related("customer", "customer__salesperson")
+
+    # Fetch existing gift assignments for the selected season
+    gift_assignments = GiftAssignment.objects.filter(gift_season=season)
+
+    # ✅ Convert to dictionary for quick lookup
+    assignments = {a.contact_id: a for a in gift_assignments}
+
+    return render(request, "crm/gift_planning.html", {
+        "season": season,
+        "contacts": contacts,
+        "assignments": assignments,  # ✅ Precomputed lookup
+        "gifts": Gift.objects.all()
+    })
+
+def update_gift_assignment(request):
+    """ AJAX view to update the Gift, Note, and Status for a contact """
+    if request.method == "POST":
+        data = json.loads(request.body)
+        assignment_id = data.get("assignment_id")
+        gift_id = data.get("gift_id")
+        note = data.get("note", "").strip()
+        status = data.get("status", "").strip()
+
+        assignment = get_object_or_404(GiftAssignment, id=assignment_id)
+        assignment.gift_id = gift_id
+        assignment.note = note
+        assignment.status = status
+        assignment.save()
+
+        return JsonResponse({
+            "success": True,
+            "gift": assignment.gift.name if assignment.gift else "No Gift",
+            "note": assignment.note,
+            "status": assignment.get_status_display()
+        })
+
+    return JsonResponse({"success": False})
+
+def gift_tracking(request, season_id):
+    """ View to track assigned gifts for a specific season """
+    season = get_object_or_404(GiftSeason, id=season_id)
+    assignments = GiftAssignment.objects.filter(gift_season=season).select_related("contact", "gift")
+
+    if request.method == "POST":
+        for key, value in request.POST.items():
+            if key.startswith("status_"):
+                assignment_id = key.split("_")[1]
+                assignment = get_object_or_404(GiftAssignment, id=assignment_id)
+                assignment.status = value
+                assignment.save()
+
+        messages.success(request, "Gift statuses updated successfully!")
+        return redirect("crm:gift_tracking", season_id=season.id)
+
+    return render(request, "crm/gift_tracking.html", {"assignments": assignments, "season": season})
+
+def gift_season_dashboard(request):
+    """ Dashboard showing all available gift seasons & allowing new season creation """
+    seasons = GiftSeason.objects.all().order_by("-date")  # Order by occasion date desc
+
+    if request.method == "POST":
+        form = GiftSeasonForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Gift season created successfully!")
+            return redirect("crm:gift_season_dashboard")
+
+    else:
+        form = GiftSeasonForm()
+
+    return render(request, "crm/gift_season_dashboard.html", {"seasons": seasons, "form": form})
+
+@csrf_exempt
+def create_gift_season(request):
+    """ Handles AJAX request to create a new Gift Season """
+    if request.method == "POST":
+        data = json.loads(request.body)
+        name = data.get("name", "").strip()
+        date = data.get("date", "").strip()
+
+        # Validate the inputs
+        if name and date:
+            try:
+                date = datetime.strptime(date, "%Y-%m-%d").date()
+                season = GiftSeason.objects.create(name=name, date=date)
+                return JsonResponse({"success": True, "id": season.id, "name": season.name, "date": season.date.strftime("%B %d, %Y")})
+            except ValueError:
+                return JsonResponse({"success": False, "error": "Invalid date format."})
+
+    return JsonResponse({"success": False, "error": "Invalid data."})
+
+def gifts_list(request):
+    """ Display all available gifts """
+    gifts = Gift.objects.all()
+    return render(request, "crm/gifts_list.html", {"gifts": gifts})
+
+def add_gift(request):
+    """ Handle adding a new gift via AJAX """
+    if request.method == "POST":
+        data = json.loads(request.body)
+        gift_name = data.get("name")
+
+        if not gift_name:
+            return JsonResponse({"success": False, "error": "Gift name is required."}, status=400)
+
+        # ✅ Create new gift
+        Gift.objects.create(name=gift_name)
+        return JsonResponse({"success": True})
+    
+    return JsonResponse({"success": False, "error": "Invalid request."}, status=400)

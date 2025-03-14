@@ -1,0 +1,109 @@
+{% extends "crm/base.html" %}
+{% block title %}Gifts List{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h1 class="text-center display-4 font-weight-bold mb-4">Available Gifts</h1>
+
+    <!-- 🚀 Add Gift Button -->
+    <div class="text-center mb-4">
+        <button class="btn btn-primary" id="addGiftBtn">
+            <i class="fas fa-plus"></i> Add New Gift
+        </button>
+        <a href="{% url 'crm:gift_season_dashboard' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Gift Seasons
+        </a>
+    </div>
+
+    <!-- 🚀 Gifts Table -->
+    <div class="table-responsive">
+        <table class="table table-striped shadow-sm">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Name</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for gift in gifts %}
+                <tr>
+                    <td>{{ gift.name }}</td>
+                    <td>
+                        <button class="btn btn-sm btn-danger delete-gift" data-gift-id="{{ gift.id }}">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="2" class="text-center">No gifts available.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 🚀 Add Gift Modal -->
+<div id="addGiftModal" class="modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Gift</h5>
+                <button type="button" class="btn-close close-modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addGiftForm">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="giftName" class="form-label">Gift Name:</label>
+                        <input type="text" id="giftName" class="form-control" required>
+                    </div>
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-success">Create Gift</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 🚀 Modal Styling -->
+<style>
+    .modal { display: none; position: fixed; z-index: 1; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.4); }
+    .modal-dialog { max-width: 400px; margin: 10% auto; }
+    .modal-content { padding: 20px; border-radius: 8px; }
+    .btn-close { cursor: pointer; }
+</style>
+
+<!-- 🚀 JavaScript for Modal & AJAX -->
+<script>
+    document.getElementById("addGiftBtn").onclick = function () {
+        document.getElementById("addGiftModal").style.display = "block";
+    };
+
+    document.querySelector(".close-modal").onclick = function () {
+        document.getElementById("addGiftModal").style.display = "none";
+    };
+
+    document.getElementById("addGiftForm").onsubmit = function (event) {
+        event.preventDefault();
+        let giftName = document.getElementById("giftName").value;
+        let csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        fetch("{% url 'crm:add_gift' %}", {
+            method: "POST",
+            headers: { "X-CSRFToken": csrfToken, "Content-Type": "application/json" },
+            body: JSON.stringify({ name: giftName }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();  // Reload the page to show the new gift
+            } else {
+                alert("Error adding gift.");
+            }
+        });
+    };
+</script>
+{% endblock %}

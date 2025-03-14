@@ -5,7 +5,7 @@ from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
 from django.template.loader import render_to_string
 from django.contrib.auth.tokens import default_token_generator
-from crm.models import Salesperson, Customer, Contact, Profile
+from crm.models import Salesperson, Customer, Contact, Profile, Gift, GiftSeason, GiftAssignment
 from crm.management.commands.send_welcome_email import Command as SendWelcomeCommand  # ✅ Import your existing command
 
 
@@ -71,3 +71,7 @@ class ContactAdmin(admin.ModelAdmin):
         form.base_fields["birthday_month"].required = False
         form.base_fields["birthday_day"].required = False
         return form
+    
+admin.site.register(Gift)
+admin.site.register(GiftSeason)
+admin.site.register(GiftAssignment)

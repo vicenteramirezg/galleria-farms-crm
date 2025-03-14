@@ -1,0 +1,48 @@
+{% extends "crm/base.html" %}
+{% block content %}
+<h2>Gift Tracking</h2>
+
+<form method="get">
+    <label for="season">Filter by Season:</label>
+    <select name="season" id="season" onchange="this.form.submit()">
+        <option value="">All Seasons</option>
+        {% for season in seasons %}
+        <option value="{{ season.id }}" {% if season.id == selected_season_id %}selected{% endif %}>{{ season.name }}</option>
+        {% endfor %}
+    </select>
+</form>
+
+<form method="post">
+    {% csrf_token %}
+    <table>
+        <tr>
+            <th>Contact</th>
+            <th>Gift Season</th>
+            <th>Gift</th>
+            <th>Status</th>
+        </tr>
+        {% for assignment in assignments %}
+        <tr>
+            <td>{{ assignment.contact.name }}</td>
+            <td>{{ assignment.gift_season.name }}</td>
+            <td>{{ assignment.gift.name if assignment.gift else "No Gift Assigned" }}</td>
+            <td>
+                <select name="status_{{ assignment.id }}">
+                    {% for choice in assignment.status.choices %}
+                    <option value="{{ choice.0 }}" {% if choice.0 == assignment.status %}selected{% endif %}>
+                        {{ choice.1 }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="4">No gift assignments found.</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <button type="submit">Update Status</button>
+</form>
+{% endblock %}

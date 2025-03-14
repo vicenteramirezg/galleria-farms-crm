@@ -1,0 +1,172 @@
+{% extends "crm/base.html" %}
+{% load humanize %}
+
+{% block title %}Assign Gifts - {{ season.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h1 class="text-center display-4 font-weight-bold mb-4">{{ season.name }}</h1>
+
+    <!-- 🚀 Contacts Table -->
+    <div class="table-responsive mt-4">
+        <table class="table table-striped shadow-sm">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Contact</th>
+                    <th>Relationship Score</th>
+                    <th>Customer</th>
+                    <th>Estimated Yearly Sales</th>
+                    <th>Salesperson</th>
+                    <th>Gift</th>
+                    <th>Note</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>                        
+            <tbody>
+                {% for contact in contacts %}
+                <tr>
+                    <td>{{ contact.name }}</td>
+                    <td>{{ contact.relationship_score }}</td>
+                    <td>{{ contact.customer.name }}</td>
+                    <td>${{ contact.customer.estimated_yearly_sales|intcomma }}</td>
+                    <td>{{ contact.customer.salesperson.user.get_full_name }}</td>
+
+                    <!-- ✅ Safe Lookup Without 'get' -->
+                    {% with assignment=assignments|default:{}|default_if_none:{}|default_if_none:{} %} 
+                        {% with assignment=assignments|default:{}|default_if_none:{}|default_if_none:{}|contact.id %} 
+                            <td id="gift-{{ contact.id }}">
+                                {{ assignment.gift.name if assignment and assignment.gift else "No Gift" }}
+                            </td>
+                            <td id="note-{{ contact.id }}">
+                                {{ assignment.note if assignment else "" }}
+                            </td>
+                            <td id="status-{{ contact.id }}">
+                                {{ assignment.get_status_display if assignment else "No Status" }}
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary edit-btn"
+                                        data-contact-id="{{ contact.id }}"
+                                        data-assignment-id="{{ assignment.id if assignment else '' }}"
+                                        data-gift-id="{{ assignment.gift.id if assignment and assignment.gift else '' }}"
+                                        data-note="{{ assignment.note if assignment else '' }}"
+                                        data-status="{{ assignment.status if assignment else '' }}">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                            </td>
+                        {% endwith %}
+                    {% endwith %}
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9" class="text-center">No contacts available.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div id="editModal" class="modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Gift Assignment</h5>
+                <button type="button" class="btn-close close-modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editForm">
+                    {% csrf_token %}
+                    <input type="hidden" id="assignmentId">
+                    
+                    <div class="mb-3">
+                        <label for="giftSelect" class="form-label">Select Gift:</label>
+                        <select id="giftSelect" class="form-control">
+                            {% for gift in gifts %}
+                            <option value="{{ gift.id }}">{{ gift.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="statusSelect" class="form-label">Select Status:</label>
+                        <select id="statusSelect" class="form-control">
+                            {% for choice in GiftAssignmentStatus.choices %}
+                            <option value="{{ choice.0 }}">{{ choice.1 }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="noteInput" class="form-label">Note:</label>
+                        <textarea id="noteInput" class="form-control" rows="3"></textarea>
+                    </div>
+
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-success">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Styling -->
+<style>
+    .modal { display: none; position: fixed; z-index: 1; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.4); }
+    .modal-dialog { max-width: 400px; margin: 10% auto; }
+    .modal-content { padding: 20px; border-radius: 8px; }
+    .btn-close { cursor: pointer; }
+</style>
+
+<!-- JavaScript for Modal & AJAX -->
+<script>
+    document.querySelectorAll(".edit-btn").forEach(button => {
+        button.onclick = function () {
+            let contactId = this.dataset.contactId;
+            let assignmentId = this.dataset.assignmentId;
+            let giftId = this.dataset.giftId;
+            let status = this.dataset.status;
+            let note = this.dataset.note;
+
+            document.getElementById("assignmentId").value = assignmentId;
+            document.getElementById("giftSelect").value = giftId;
+            document.getElementById("statusSelect").value = status;
+            document.getElementById("noteInput").value = note;
+            
+            document.getElementById("editModal").style.display = "block";
+        };
+    });
+
+    document.querySelector(".close-modal").onclick = function () {
+        document.getElementById("editModal").style.display = "none";
+    };
+
+    document.getElementById("editForm").onsubmit = function (event) {
+        event.preventDefault();
+        let assignmentId = document.getElementById("assignmentId").value;
+        let giftId = document.getElementById("giftSelect").value;
+        let status = document.getElementById("statusSelect").value;
+        let note = document.getElementById("noteInput").value;
+        let csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        fetch("{% url 'crm:update_gift_assignment' %}", {
+            method: "POST",
+            headers: { "X-CSRFToken": csrfToken, "Content-Type": "application/json" },
+            body: JSON.stringify({ assignment_id: assignmentId, gift_id: giftId, status: status, note: note }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById("gift-" + assignmentId).innerText = data.gift;
+                document.getElementById("status-" + assignmentId).innerText = data.status;
+                document.getElementById("note-" + assignmentId).innerText = data.note;
+                document.getElementById("editModal").style.display = "none";
+            } else {
+                alert("Error updating gift assignment.");
+            }
+        });
+    };
+</script>
+{% endblock %}

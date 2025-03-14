@@ -95,3 +95,51 @@ class Contact(BaseModel):
 
     def __str__(self):
         return f"{self.name} ({self.customer.name})"
+
+class GiftSeason(BaseModel):
+    """ Defines gifting seasons (e.g., Christmas 2024, Mother's Day 2025) """
+    name = models.CharField(max_length=255, unique=True)
+    date = models.DateField(null=True)  # When the gift selection starts
+
+    def __str__(self):
+        return self.name
+
+
+class Gift(BaseModel):
+    """ Defines available gifts (Chocolate 1, Champagne 2, etc.) """
+    name = models.CharField(max_length=255, unique=True)
+    description = models.TextField(blank=True, null=True)
+    min_yearly_sales = models.IntegerField(default=0)  # Min sales to qualify
+    min_relationship_score = models.IntegerField(default=0)  # Min score to qualify
+
+    def __str__(self):
+        return f"{self.name} (Min Sales: {self.min_yearly_sales}, Min Score: {self.min_relationship_score})"
+
+
+class GiftAssignmentStatus(models.TextChoices):
+    """ Enum for tracking gift status """
+    PENDING = "Pending", "Pending"
+    APPROVED = "Approved", "Approved"
+    SENT = "Sent", "Sent"
+    NULL = "Null", "No Status"
+
+
+class GiftAssignment(BaseModel):
+    """ Links a Contact to a Gift in a specific GiftSeason """
+    contact = models.ForeignKey("Contact", on_delete=models.CASCADE, related_name="gift_assignments")
+    gift_season = models.ForeignKey(GiftSeason, on_delete=models.CASCADE, related_name="assignments")
+    gift = models.ForeignKey(Gift, on_delete=models.SET_NULL, null=True, blank=True, related_name="assignments")
+    status = models.CharField(
+        max_length=10,
+        choices=GiftAssignmentStatus.choices,
+        default=GiftAssignmentStatus.NULL
+    )
+    note = models.TextField(blank=True, null=True)  # ✅ New field to store notes
+
+    def __str__(self):
+        gift_name = self.gift.name if self.gift else "No Gift Assigned"
+        return f"{self.contact.name} -> {gift_name} ({self.gift_season.name}) - {self.status}"
+
+    def __str__(self):
+        gift_name = self.gift.name if self.gift else "No Gift Assigned"
+        return f"{self.contact.name} -> {gift_name} ({self.gift_season.name}) - {self.status}"

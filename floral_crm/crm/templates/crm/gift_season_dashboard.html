@@ -1,0 +1,132 @@
+{% extends "crm/base.html" %}
+{% block title %}Gift Seasons - CRM{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h1 class="text-center display-4 font-weight-bold mb-4">Gift Seasons</h1>
+
+    <!-- Add Gift Season Button -->
+    <div class="text-center mb-4 d-flex justify-content-center gap-3">
+        <button id="openModal" class="btn btn-primary btn-lg px-4 py-2">Add Gift Season</button>
+    
+        <a href="{% url 'crm:gifts_list' %}" class="btn btn-secondary btn-lg px-4 py-2">
+            <i class="fas fa-gift"></i> View All Gifts
+        </a>
+    </div>    
+
+    <!-- The Popup Modal -->
+    <div id="seasonModal" class="modal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Create a New Gift Season</h5>
+                    <button type="button" class="btn-close close" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="seasonForm">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="seasonName" class="form-label">Season Name:</label>
+                            <input type="text" name="name" id="seasonName" class="form-control" placeholder="Enter season name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="date" class="form-label">Occasion Date:</label>
+                            <input type="date" name="date" id="date" class="form-control" required>
+                        </div>
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-success">Create</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Display Gift Seasons as Cards -->
+    {% if seasons %}
+        <div class="row">
+            {% for season in seasons %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card shadow-sm h-100 position-relative">
+                        <div class="card-body text-center">
+                            <h3 class="card-title text-primary">{{ season.name }}</h3>
+                            <p class="text-muted">🎉 Occasion Date: {{ season.date|date:"F d, Y" }}</p>
+                            <div class="mt-3">
+                                <a href="{% url 'crm:gift_planning' season.id %}" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-gift"></i> Assign Gifts
+                                </a>
+                                <a href="{% url 'crm:gift_tracking' season.id %}" class="btn btn-outline-secondary btn-sm">
+                                    <i class="fas fa-eye"></i> Track Gifts
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="text-center">No available gift seasons.</p>
+    {% endif %}
+</div>
+
+<!-- Modal Styling -->
+<style>
+    .modal { display: none; position: fixed; z-index: 1; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.4); }
+    .modal-dialog { max-width: 400px; margin: 10% auto; }
+    .modal-content { padding: 20px; border-radius: 8px; }
+    .btn-close { cursor: pointer; }
+</style>
+
+<!-- JavaScript for Modal and AJAX -->
+<script>
+    document.getElementById("openModal").onclick = function () {
+        document.getElementById("seasonModal").style.display = "block";
+    };
+
+    document.querySelector(".close").onclick = function () {
+        document.getElementById("seasonModal").style.display = "none";
+    };
+
+    document.getElementById("seasonForm").onsubmit = function (event) {
+        event.preventDefault();
+        let seasonName = document.getElementById("seasonName").value;
+        let date = document.getElementById("date").value;
+        let csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        fetch("{% url 'crm:create_gift_season' %}", {
+            method: "POST",
+            headers: { "X-CSRFToken": csrfToken, "Content-Type": "application/json" },
+            body: JSON.stringify({ name: seasonName, date: date }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                let newSeason = document.createElement("div");
+                newSeason.classList.add("col-md-6", "col-lg-4", "mb-4");
+                newSeason.innerHTML = `
+                    <div class="card shadow-sm h-100 position-relative">
+                        <div class="card-body text-center">
+                            <h3 class="card-title text-primary">${data.name}</h3>
+                            <p class="text-muted">🎉 Occasion Date: ${data.date}</p>
+                            <div class="mt-3">
+                                <a href="/crm/gifts/${data.id}/planning/" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-gift"></i> Assign Gifts
+                                </a>
+                                <a href="/crm/gifts/${data.id}/tracking/" class="btn btn-outline-secondary btn-sm">
+                                    <i class="fas fa-eye"></i> Track Gifts
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.querySelector(".row").appendChild(newSeason);
+                document.getElementById("seasonModal").style.display = "none";
+                document.getElementById("seasonName").value = "";
+                document.getElementById("date").value = "";
+            } else {
+                alert("Error creating season.");
+            }
+        });
+    };
+</script>
+{% endblock %}
